@@ -1,27 +1,18 @@
-import Link from "next/link";
+import { FinalCta } from "@/lib/components/sections/final-cta";
+import { Hero } from "@/lib/components/sections/hero";
+import { SocialProof } from "@/lib/components/sections/social-proof";
+import { Subjects } from "@/lib/components/sections/subjects";
+import { Usp } from "@/lib/components/sections/usp";
 
-import { Badge } from "@/lib/components/ui/badge";
-import { buttonVariants } from "@/lib/components/ui/button";
-import { Container } from "@/lib/components/ui/container";
-
-// Landing page (/). Pełna implementacja w Kroku 4 (sekcja 6.1).
-// Na razie placeholder demonstrujący komponenty bazowe z Kroku 2.
+// Landing page (/) — sekcja 6.1.
 export default function HomePage() {
   return (
-    <Container
-      size="sm"
-      className="flex min-h-[70vh] flex-col items-center justify-center gap-5 py-20 text-center"
-    >
-      <Badge variant="primary">EDU LUZ</Badge>
-      <h1 className="text-h1">Korepetycje bez stresu, na serio</h1>
-      <p className="text-body text-secondary">
-        Nowoczesna edukacja, zero stresu. Strona w budowie — landing page
-        powstanie w Kroku 4.
-      </p>
-      {/* CTA jako link ostylowany wariantami przycisku (wzorzec shadcn/ui). */}
-      <Link href="/oferta" className={buttonVariants({ size: "lg" })}>
-        Sprawdź ofertę
-      </Link>
-    </Container>
+    <>
+      <Hero />
+      <Usp />
+      <Subjects />
+      <SocialProof />
+      <FinalCta />
+    </>
   );
 }
