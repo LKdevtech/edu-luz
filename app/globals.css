@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Standardowy timing animacji interaktywnych elementów — sekcja 3.6 */
+@layer base {
+  body {
+    text-rendering: optimizeLegibility;
+  }
+}
