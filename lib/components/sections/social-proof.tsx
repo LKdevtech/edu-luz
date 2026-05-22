@@ -1,29 +1,55 @@
-import { Container } from "@/lib/components/ui/container";
+import { Section, SectionTitle, cardBase } from "./section";
 
-// PLACEHOLDER (sekcja 7) — właściciel uzupełni rzeczywiste liczby.
-const STATS = [
-  { value: "200+", label: "zadowolonych uczniów" },
-  { value: "8 lat", label: "doświadczenia" },
-  { value: "95%", label: "zdawalności matur" },
-  { value: "6", label: "przedmiotów w ofercie" },
+// "Co o nas mówią" — opinie (mockup SOCIAL PROOF). PLACEHOLDER do pilotażu.
+const TESTIMONIALS = [
+  {
+    quote:
+      "Wreszcie jedno miejsce na wszystkie zajęcia. Nie muszę wozić syna po całym mieście.",
+    author: "Mama ucznia, klasa 8",
+    stars: 5,
+  },
+  {
+    quote:
+      "Fajne podejście, bez stresu. Notatki po lekcji naprawdę pomagają mi się powtarzać.",
+    author: "Uczeń, 2 klasa LO",
+    stars: 5,
+  },
+  {
+    quote:
+      "Panel z płatnościami to strzał w dziesiątkę — wiem ile, kiedy i za co płacę.",
+    author: "Tata dwójki dzieci",
+    stars: 5,
+  },
 ];
 
-// Social proof — sekcja 6.1.4.
 export function SocialProof() {
   return (
-    <section className="bg-alt py-20 md:py-24">
-      <Container>
-        <div className="grid grid-cols-2 gap-8 text-center lg:grid-cols-4">
-          {STATS.map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center gap-1">
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-4xl font-black text-transparent md:text-5xl">
-                {stat.value}
-              </span>
-              <span className="text-sm text-secondary">{stat.label}</span>
+    <Section>
+      <SectionTitle sub="Opinie rodziców i uczniów z naszego centrum.">
+        Co o nas mówią
+      </SectionTitle>
+
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
+        {TESTIMONIALS.map((t) => (
+          <div key={t.author} className={`${cardBase} relative`}>
+            <div className="mb-3 flex gap-0.5">
+              {Array.from({ length: t.stars }).map((_, j) => (
+                <span key={j} className="text-[16px] text-tertiary">
+                  ★
+                </span>
+              ))}
             </div>
-          ))}
-        </div>
-      </Container>
-    </section>
+            <p className="mb-3.5 text-[14px] font-medium italic leading-[1.75] text-primary">
+              „{t.quote}”
+            </p>
+            <p className="text-[12px] font-bold text-dim">— {t.author}</p>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-4 text-[12px] font-medium italic text-dim">
+        💡 Sekcja opcjonalna w MVP — do uzupełnienia po pilocie prawdziwymi opiniami.
+      </p>
+    </Section>
   );
 }

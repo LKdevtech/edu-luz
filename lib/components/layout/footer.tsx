@@ -1,88 +1,87 @@
 import Link from "next/link";
 
-import { Container } from "@/lib/components/ui/container";
-import { LEGAL_LINKS, NAV_LINKS, SITE } from "@/lib/config/site";
+import { NAV_LINKS } from "@/lib/config/site";
+import { cn } from "@/lib/utils/cn";
 
 import { Logo } from "./logo";
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-3 text-caption uppercase tracking-wide text-dim">{children}</h3>
+    <p className="mb-3.5 text-[12px] font-extrabold uppercase tracking-[1px] text-secondary">
+      {children}
+    </p>
   );
 }
 
-const footerLinkClass =
-  "text-sm text-secondary transition-colors hover:text-white";
+const linkClass =
+  "block text-[13px] font-medium text-dim transition-colors hover:text-secondary";
 
+// Footer — odwzorowanie mockupu (4 kolumny, ciemniejsze tło #0F1120).
 export function Footer() {
-  const year = new Date().getFullYear();
-
   return (
-    <footer className="border-t border-subtle bg-alt">
-      <Container className="py-12">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Brand + adres */}
-          <div className="flex flex-col gap-3">
-            <Logo />
-            <p className="text-sm text-secondary">{SITE.tagline}</p>
-            <p className="text-sm text-dim">
-              {SITE.address}
+    <footer className="border-t border-subtle bg-[#0F1120] pb-8 pt-14">
+      <div className="mx-auto max-w-[1080px] px-6">
+        <div className="mb-10 grid gap-9 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
+          {/* Marka + adres */}
+          <div>
+            <Logo markSize={32} textClassName="text-[16px]" className="mb-4 gap-2.5" />
+            <p className="text-[13px] font-medium leading-[1.7] text-dim">
+              Edukacja Na Luzie
               <br />
-              {SITE.city}
+              ul. [adres placeholder]
+              <br />
+              Tomaszów Mazowiecki
             </p>
           </div>
 
           {/* Nawigacja */}
-          <nav aria-label="Nawigacja w stopce">
+          <div>
             <FooterHeading>Nawigacja</FooterHeading>
-            <ul className="flex flex-col gap-2">
-              {NAV_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className={footerLinkClass}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+            {NAV_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className={cn(linkClass, "mb-2.5")}>
+                {link.label}
+              </Link>
+            ))}
+          </div>
 
           {/* Kontakt */}
           <div>
             <FooterHeading>Kontakt</FooterHeading>
-            <ul className="flex flex-col gap-2 text-sm text-secondary">
-              <li>
-                <a href={`tel:${SITE.phone.replace(/\s+/g, "")}`} className={footerLinkClass}>
-                  {SITE.phone}
-                </a>
-              </li>
-              <li>
-                <a href={`mailto:${SITE.email}`} className={footerLinkClass}>
-                  {SITE.email}
-                </a>
-              </li>
-              <li className="text-dim">{SITE.hours}</li>
-            </ul>
+            <p className="text-[13px] font-medium leading-[2] text-dim">
+              📞 +48 [telefon]
+              <br />
+              ✉️ kontakt@eduluz.pl
+              <br />
+              📍 Tomaszów Mazowiecki
+            </p>
           </div>
 
-          {/* Informacje prawne */}
+          {/* Dla uczniów */}
           <div>
-            <FooterHeading>Informacje prawne</FooterHeading>
-            <ul className="flex flex-col gap-2">
-              {LEGAL_LINKS.map((link) => (
-                <li key={link.label}>
-                  <Link href={link.href} className={footerLinkClass}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <FooterHeading>Dla uczniów</FooterHeading>
+            <Link href="/login" className={cn(linkClass, "mb-2.5")}>
+              Zaloguj się do panelu
+            </Link>
+            <Link href="/blog" className={cn(linkClass, "mb-2.5")}>
+              Jak korzystać z panelu?
+            </Link>
           </div>
         </div>
 
-        <div className="mt-10 border-t border-subtle pt-6 text-caption text-dim">
-          © {year} {SITE.name}. Wszelkie prawa zastrzeżone.
+        <div className="flex flex-wrap justify-between gap-3 border-t border-subtle pt-6">
+          <p className="text-[11px] font-medium text-dim">
+            © 2026 EDU LUZ Edukacja Na Luzie. Wszelkie prawa zastrzeżone.
+          </p>
+          <div className="flex gap-5">
+            <Link href="#" className="text-[11px] font-medium text-dim transition-colors hover:text-secondary">
+              Polityka prywatności
+            </Link>
+            <Link href="#" className="text-[11px] font-medium text-dim transition-colors hover:text-secondary">
+              Regulamin
+            </Link>
+          </div>
         </div>
-      </Container>
+      </div>
     </footer>
   );
 }

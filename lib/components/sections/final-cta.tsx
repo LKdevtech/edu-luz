@@ -1,34 +1,39 @@
 import Link from "next/link";
 
-import { buttonVariants } from "@/lib/components/ui/button";
-import { Card } from "@/lib/components/ui/card";
-import { Container } from "@/lib/components/ui/container";
-import { cn } from "@/lib/utils/cn";
+import { SITE } from "@/lib/config/site";
 
-// CTA końcowe — sekcja 6.1.5.
+import { Blob } from "./blob";
+
+// CTA końcowe — gradientowa sekcja (mockup CTA).
 export function FinalCta() {
   return (
-    <section className="py-20 md:py-24">
-      <Container size="md">
-        <Card className="relative overflow-hidden p-10 text-center md:p-16">
-          {/* Dekoracyjny blob — sekcja 3.6 */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary opacity-[0.10] blur-[70px]"
-          />
-          <h2 className="text-h2">Umów bezpłatną konsultację</h2>
-          <p className="mx-auto mt-3 max-w-md text-body text-secondary">
-            Porozmawiajmy o celach Twojego dziecka i dobierzmy korepetytora bez
-            żadnych zobowiązań.
-          </p>
+    <section className="relative overflow-hidden bg-gradient-to-br from-primary to-accent py-[72px]">
+      <Blob color="#fff" size={300} top={-100} right={-80} opacity={0.06} />
+
+      <div className="relative z-[1] mx-auto max-w-[1080px] px-6 text-center">
+        <h2 className="mb-3 text-[32px] font-black text-white">
+          Gotowy na naukę na luzie?
+        </h2>
+        <p className="mx-auto mb-8 max-w-[480px] text-[16px] font-medium leading-[1.7] text-white/75">
+          Umów bezpłatne spotkanie organizacyjne. Sprawdzimy poziom, dobierzemy
+          korepetytora i ustalimy grafik.
+        </p>
+
+        <div className="flex flex-wrap justify-center gap-3.5">
           <Link
             href="/kontakt"
-            className={cn(buttonVariants({ size: "lg" }), "mt-8")}
+            className="rounded-[14px] bg-white px-9 py-[15px] text-[16px] font-extrabold text-[#2D7DE8] transition-transform duration-150 hover:scale-[1.03]"
           >
-            Umów bezpłatną konsultację
+            Umów spotkanie →
           </Link>
-        </Card>
-      </Container>
+          <a
+            href={`tel:${SITE.phone.replace(/\s+/g, "")}`}
+            className="rounded-[14px] border-[1.5px] border-white/30 bg-white/15 px-9 py-[15px] text-[16px] font-bold text-white transition-colors hover:bg-white/25"
+          >
+            Zadzwoń do nas
+          </a>
+        </div>
+      </div>
     </section>
   );
 }

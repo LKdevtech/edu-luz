@@ -9,9 +9,8 @@ export interface NavLink {
   label: string;
 }
 
-// Nawigacja główna — sekcja 4.
+// Nawigacja główna — kolejność wg zatwierdzonego mockupu.
 export const NAV_LINKS: readonly NavLink[] = [
-  { href: "/", label: "Strona główna" },
   { href: "/oferta", label: "Oferta i cennik" },
   { href: "/o-nas", label: "O nas" },
   { href: "/blog", label: "Blog" },
