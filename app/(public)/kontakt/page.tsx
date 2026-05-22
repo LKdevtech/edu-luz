@@ -1,9 +1,22 @@
-// Kontakt (/kontakt). Pełna implementacja w Kroku 8 (sekcja 6.4).
+import type { Metadata } from "next";
+
+import { KontaktContact } from "@/lib/components/sections/kontakt-contact";
+import { KontaktHero } from "@/lib/components/sections/kontakt-hero";
+import { KontaktMap } from "@/lib/components/sections/kontakt-map";
+
+export const metadata: Metadata = {
+  title: "Kontakt — EDU LUZ",
+  description:
+    "Skontaktuj się z EDU LUZ w Tomaszowie Mazowieckim. Napisz przez formularz, zadzwoń lub umów bezpłatne spotkanie organizacyjne.",
+};
+
+// Strona kontaktu — kolejność sekcji wg zatwierdzonego mockupu.
 export default function KontaktPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-3 px-6 text-center">
-      <h1 className="text-h2">Kontakt</h1>
-      <p className="text-body text-secondary">Wkrótce.</p>
-    </main>
+    <>
+      <KontaktHero />
+      <KontaktContact />
+      <KontaktMap />
+    </>
   );
 }
