@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { SubjectGlyph } from "@/lib/components/ui/subject-glyph";
 import { SUBJECTS } from "@/lib/config/subjects";
 
 import { Blob } from "./blob";
@@ -79,7 +80,7 @@ export function Hero() {
           <div className="flex flex-wrap gap-2.5">
             {SUBJECTS.filter((s) => !s.planned).map((s) => (
               <Pill key={s.name} color={s.color}>
-                {s.icon} {s.name}
+                <SubjectGlyph icon={s.icon} flag={s.flag} size={15} /> {s.name}
               </Pill>
             ))}
             <Pill color="#6B6780">+2 wkrótce</Pill>

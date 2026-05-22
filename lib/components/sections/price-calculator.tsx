@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { SubjectGlyph } from "@/lib/components/ui/subject-glyph";
 import { SUBJECTS } from "@/lib/config/subjects";
 import {
   CALC_FORMS,
@@ -87,7 +88,7 @@ export function PriceCalculator({ table }: { table: PriceTable }) {
               color={s.color}
               onClick={() => setSelSubject(s.name)}
             >
-              <span className="text-[15px]">{s.icon}</span> {s.name}
+              <SubjectGlyph icon={s.icon} flag={s.flag} size={15} /> {s.name}
             </Chip>
           ))}
         </div>

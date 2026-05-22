@@ -58,6 +58,20 @@ const LEVEL_MAP: Record<LevelKey, TutorLevel> = {
   srednia_r: "SRR",
 };
 
+// Hierarchia poziomów: SP < SR < SRR.
+const LEVEL_ORDER: Record<TutorLevel, number> = { SP: 0, SR: 1, SRR: 2 };
+
+// Najniższy sensowny poziom danego przedmiotu. Elektrotechnika jest przedmiotem
+// szkoły średniej — nie ma jej w podstawówce, więc nie schodzimy poniżej SR.
+const SUBJECT_MIN_LEVEL: Record<string, TutorLevel> = {
+  Elektrotechnika: "SR",
+};
+
+// Maksymalny poziom, jaki prowadzi korepetytor (z zadeklarowanych).
+function maxTutorLevel(t: Tutor): number {
+  return Math.max(...t.levels.map((l) => LEVEL_ORDER[l]));
+}
+
 // Narzut — sekcja 5.2: cena_klienta = stawka + MAX(40 zł, stawka × 0.60).
 function clientBasePrice(rate: number): number {
   return rate + Math.max(40, rate * 0.6);
@@ -74,11 +88,20 @@ export function getPriceTable(): PriceTable {
   for (const subject of CALC_SUBJECTS) {
     const perLevel = {} as Record<LevelKey, PriceCell>;
 
+    const minLevelVal = LEVEL_ORDER[SUBJECT_MIN_LEVEL[subject] ?? "SP"];
+
     for (const level of CALC_LEVELS) {
-      const tutorLevel = LEVEL_MAP[level.key];
-      const prices = TUTORS.filter(
-        (t) => t.subject === subject && t.levels.includes(tutorLevel),
-      ).map((t) => Math.round(clientBasePrice(t.rate)));
+      const targetVal = LEVEL_ORDER[LEVEL_MAP[level.key]];
+
+      // Poziom poniżej minimum przedmiotu (np. elektrotechnika w podstawówce)
+      // jest niedostępny. W przeciwnym razie korepetytor uczący wyżej może też
+      // poprowadzić niższy poziom (maxTutorLevel >= targetVal).
+      const prices =
+        targetVal < minLevelVal
+          ? []
+          : TUTORS.filter(
+              (t) => t.subject === subject && maxTutorLevel(t) >= targetVal,
+            ).map((t) => Math.round(clientBasePrice(t.rate)));
 
       perLevel[level.key] = prices.length
         ? { available: true, base: [Math.min(...prices), Math.max(...prices)] }

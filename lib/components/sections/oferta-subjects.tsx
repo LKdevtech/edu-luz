@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { type FlagCode } from "@/lib/components/ui/flag";
+import { SubjectGlyph } from "@/lib/components/ui/subject-glyph";
 
 import { Section, SectionTitle } from "./section";
 
@@ -12,6 +15,7 @@ interface SubjectDetail {
   schoolLevels: string[];
   desc: string;
   topics: string[];
+  flag?: FlagCode;
 }
 
 const SUBJECTS_FULL: SubjectDetail[] = [
@@ -27,6 +31,7 @@ const SUBJECTS_FULL: SubjectDetail[] = [
   {
     name: "Angielski",
     icon: "🇬🇧",
+    flag: "gb",
     color: "#06B6D4",
     levels: ["Podstawówka", "Średnia podst.", "Średnia rozsz."],
     schoolLevels: ["Szkoła podstawowa", "Szkoła średnia"],
@@ -71,14 +76,30 @@ const SUBJECTS_FULL: SubjectDetail[] = [
   },
 ];
 
-const PLANNED = [
-  { name: "Włoski", icon: "🇮🇹", color: "#EF4444", status: "W planie" },
-  { name: "Niemiecki", icon: "🇩🇪", color: "#FBBF24", status: "W przygotowaniu" },
+const PLANNED: { name: string; icon: string; flag: FlagCode; color: string; status: string }[] = [
+  { name: "Włoski", icon: "🇮🇹", flag: "it", color: "#EF4444", status: "W planie" },
+  { name: "Niemiecki", icon: "🇩🇪", flag: "de", color: "#FBBF24", status: "W przygotowaniu" },
 ];
 
 // "Nasze przedmioty" — rozwijana lista (mockup sekcja 6).
 export function OfertaSubjects() {
   const [expanded, setExpanded] = useState<number | null>(null);
+
+  // Deep-link z landingu (/oferta#przedmiot-<nazwa>): rozwiń i przewiń do przedmiotu.
+  useEffect(() => {
+    const hash = decodeURIComponent(window.location.hash.replace("#", ""));
+    if (!hash.startsWith("przedmiot-")) return;
+    const name = hash.slice("przedmiot-".length);
+    const idx = SUBJECTS_FULL.findIndex((s) => s.name.toLowerCase() === name);
+    if (idx === -1) return;
+    setExpanded(idx);
+    const el = document.getElementById(hash);
+    if (el) {
+      window.requestAnimationFrame(() =>
+        el.scrollIntoView({ behavior: "smooth", block: "center" }),
+      );
+    }
+  }, []);
 
   return (
     <Section alt className="py-14">
@@ -95,7 +116,8 @@ export function OfertaSubjects() {
           return (
             <div
               key={s.name}
-              className="overflow-hidden rounded-[4px_18px_18px_4px] border border-subtle bg-surface"
+              id={`przedmiot-${s.name.toLowerCase()}`}
+              className="scroll-mt-20 overflow-hidden rounded-[4px_18px_18px_4px] border border-subtle bg-surface"
               style={{ borderLeft: `4px solid ${s.color}` }}
             >
               <button
@@ -104,7 +126,7 @@ export function OfertaSubjects() {
                 aria-expanded={isOpen}
                 className="flex w-full items-center gap-3 px-5 py-[18px] text-left"
               >
-                <span className="text-[22px]">{s.icon}</span>
+                <SubjectGlyph icon={s.icon} flag={s.flag} size={22} />
                 <span className="flex-1 text-[16px] font-extrabold text-primary">
                   {s.name}
                 </span>
@@ -168,7 +190,7 @@ export function OfertaSubjects() {
             key={s.name}
             className="flex flex-[1_1_240px] items-center gap-3 rounded-[14px] border border-subtle bg-surface px-[18px] py-3.5 opacity-65"
           >
-            <span className="text-[20px]">{s.icon}</span>
+            <SubjectGlyph icon={s.icon} flag={s.flag} size={20} />
             <span className="flex-1 text-[14px] font-extrabold text-primary">{s.name}</span>
             <span className="rounded-[20px] bg-tertiary/20 px-3 py-1 text-[10px] font-extrabold uppercase text-tertiary">
               {s.status}

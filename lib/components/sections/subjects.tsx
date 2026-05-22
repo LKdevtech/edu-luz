@@ -1,3 +1,6 @@
+import Link from "next/link";
+
+import { SubjectGlyph } from "@/lib/components/ui/subject-glyph";
 import { SUBJECTS } from "@/lib/config/subjects";
 
 import { Section, SectionTitle } from "./section";
@@ -31,7 +34,7 @@ export function Subjects() {
               style={{ borderLeft: `4px solid ${s.color}`, opacity: s.planned ? 0.75 : 1 }}
             >
               <div className="mb-2.5 flex items-center gap-2.5">
-                <span className="text-[22px]">{s.icon}</span>
+                <SubjectGlyph icon={s.icon} flag={s.flag} size={22} />
                 <span className="text-[16px] font-extrabold text-primary">{s.name}</span>
               </div>
 
@@ -55,12 +58,13 @@ export function Subjects() {
 
               {!s.planned && (
                 <div className="mt-1">
-                  <span
-                    className="cursor-pointer text-[12px] font-bold"
+                  <Link
+                    href={`/oferta#przedmiot-${s.name.toLowerCase()}`}
+                    className="text-[12px] font-bold"
                     style={{ color: s.color, borderBottom: `1.5px solid ${s.color}40` }}
                   >
                     Szczegóły →
-                  </span>
+                  </Link>
                 </div>
               )}
             </div>

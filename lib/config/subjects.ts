@@ -4,12 +4,16 @@
  * Odwzorowanie zatwierdzonego mockupu (mockup/edu-luz-landing-full.jsx).
  */
 
+import type { FlagCode } from "@/lib/components/ui/flag";
+
 export interface Subject {
   name: string;
   icon: string;
   color: string;
   desc: string;
   levels?: string[];
+  /** Kod flagi kraju dla języków obcych (zamiast emoji). */
+  flag?: FlagCode;
   /** Etykieta wstążki dla przedmiotów planowanych (np. "W planie"). */
   planned?: string;
 }
@@ -25,6 +29,7 @@ export const SUBJECTS: Subject[] = [
   {
     name: "Angielski",
     icon: "🇬🇧",
+    flag: "gb",
     color: "#06B6D4",
     desc: "Gramatyka, konwersacje, przygotowanie do egzaminów",
     levels: ["podstawowy", "rozszerzony"],
@@ -60,6 +65,7 @@ export const SUBJECTS: Subject[] = [
   {
     name: "Włoski",
     icon: "🇮🇹",
+    flag: "it",
     color: "#EF4444",
     desc: "Podstawy języka, konwersacje, gramatyka",
     planned: "W planie",
@@ -67,6 +73,7 @@ export const SUBJECTS: Subject[] = [
   {
     name: "Niemiecki",
     icon: "🇩🇪",
+    flag: "de",
     color: "#FBBF24",
     desc: "Gramatyka, słownictwo, przygotowanie do egzaminów",
     planned: "W przygotowaniu",
