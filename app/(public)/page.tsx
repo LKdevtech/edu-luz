@@ -10,7 +10,7 @@ export default function HomePage() {
   return (
     <Container
       size="sm"
-      className="flex min-h-screen flex-col items-center justify-center gap-5 text-center"
+      className="flex min-h-[70vh] flex-col items-center justify-center gap-5 py-20 text-center"
     >
       <Badge variant="primary">EDU LUZ</Badge>
       <h1 className="text-h1">Korepetycje bez stresu, na serio</h1>
