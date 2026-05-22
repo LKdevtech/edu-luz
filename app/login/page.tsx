@@ -1,9 +1,13 @@
-// Logowanie (/login) — tylko UI, bez Supabase Auth. Krok 9 (sekcja 6.6).
+import type { Metadata } from "next";
+
+import { LoginScreen } from "@/lib/components/sections/login-screen";
+
+export const metadata: Metadata = {
+  title: "Logowanie — EDU LUZ",
+  description: "Zaloguj się do panelu EDU LUZ — korepetytorzy, rodzice i uczniowie.",
+};
+
+// Logowanie (/login) — poza grupą (public): bez navbara i footera.
 export default function LoginPage() {
-  return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-3 px-6 text-center">
-      <h1 className="text-h2">Zaloguj się</h1>
-      <p className="text-body text-secondary">Wkrótce.</p>
-    </main>
-  );
+  return <LoginScreen />;
 }
