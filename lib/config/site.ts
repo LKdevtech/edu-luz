@@ -14,7 +14,6 @@ export const NAV_LINKS: readonly NavLink[] = [
   { href: "/", label: "Strona główna" },
   { href: "/oferta", label: "Oferta i cennik" },
   { href: "/o-nas", label: "O nas" },
-  { href: "/blog", label: "Blog" },
   { href: "/kontakt", label: "Kontakt" },
 ];
 

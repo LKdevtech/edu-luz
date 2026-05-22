@@ -62,7 +62,7 @@ export function Footer() {
             <Link href="/login" className={cn(linkClass, "mb-2.5")}>
               Zaloguj się do panelu
             </Link>
-            <Link href="/blog" className={cn(linkClass, "mb-2.5")}>
+            <Link href="#" className={cn(linkClass, "mb-2.5")}>
               Jak korzystać z panelu?
             </Link>
           </div>
