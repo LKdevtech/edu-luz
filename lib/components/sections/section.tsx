@@ -40,12 +40,13 @@ export function Section({ children, alt = false, id, className }: SectionProps) 
 interface SectionTitleProps {
   children: ReactNode;
   sub?: string;
+  className?: string;
 }
 
 // Nagłówek sekcji (mockup <SectionTitle>): h2 28/900, sub 15/500 muted.
-export function SectionTitle({ children, sub }: SectionTitleProps) {
+export function SectionTitle({ children, sub, className }: SectionTitleProps) {
   return (
-    <div className="mb-9">
+    <div className={cn("mb-9", className)}>
       <h2 className="mb-2 text-[28px] font-black leading-tight tracking-[-0.3px] text-primary">
         {children}
       </h2>
