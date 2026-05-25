@@ -8,10 +8,15 @@ import { ONasTeam } from "@/lib/components/sections/o-nas-team";
 import { ONasTimeline } from "@/lib/components/sections/o-nas-timeline";
 import { ONasValues } from "@/lib/components/sections/o-nas-values";
 
+const description =
+  "Poznaj EDU LUZ — centrum korepetycji w Tomaszowie Mazowieckim. Nasza historia, podejście do nauki bez stresu, zespół korepetytorów i wartości.";
+
 export const metadata: Metadata = {
-  title: "O nas — EDU LUZ",
-  description:
-    "Poznaj EDU LUZ — centrum korepetycji w Tomaszowie Mazowieckim. Nasza historia, podejście do nauki bez stresu, zespół korepetytorów i wartości.",
+  title: "O nas",
+  description,
+  alternates: { canonical: "/o-nas" },
+  openGraph: { title: "O nas", description, url: "/o-nas" },
+  twitter: { title: "O nas — EDU LUZ", description },
 };
 
 // Strona "O nas" — kolejność sekcji wg zatwierdzonego mockupu.

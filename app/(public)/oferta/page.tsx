@@ -11,10 +11,15 @@ import { OfertaWhy } from "@/lib/components/sections/oferta-why";
 import { PriceCalculator } from "@/lib/components/sections/price-calculator";
 import { Section, SectionTitle } from "@/lib/components/sections/section";
 
+const description =
+  "Korepetycje w Tomaszowie Mazowieckim: matematyka, angielski, fizyka, chemia, polski, elektrotechnika. Zajęcia indywidualne, w parach i w małych grupach. Sprawdź orientacyjne ceny w kalkulatorze.";
+
 export const metadata: Metadata = {
-  title: "Oferta i cennik — EDU LUZ",
-  description:
-    "Korepetycje w Tomaszowie Mazowieckim: matematyka, angielski, fizyka, chemia, polski, elektrotechnika. Zajęcia indywidualne, w parach i w małych grupach. Sprawdź orientacyjne ceny w kalkulatorze.",
+  title: "Oferta i cennik",
+  description,
+  alternates: { canonical: "/oferta" },
+  openGraph: { title: "Oferta i cennik", description, url: "/oferta" },
+  twitter: { title: "Oferta i cennik — EDU LUZ", description },
 };
 
 // Cennik liczony po stronie serwera — stawki korepetytorów nie trafiają do

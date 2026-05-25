@@ -4,11 +4,35 @@ import { LessonFormats } from "@/lib/components/sections/lesson-formats";
 import { SocialProof } from "@/lib/components/sections/social-proof";
 import { Subjects } from "@/lib/components/sections/subjects";
 import { Usp } from "@/lib/components/sections/usp";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/config/seo";
+
+// Schema.org JSON-LD: pomaga Google rozpoznać firmę jako lokalną instytucję
+// edukacyjną w Tomaszowie Mazowieckim. Adres/telefon dojdą po podaniu danych.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  name: SITE_NAME,
+  alternateName: "Edukacja Na Luzie",
+  description: SITE_DESCRIPTION,
+  url: SITE_URL,
+  email: "kontakt@eduluz.pl",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Tomaszów Mazowiecki",
+    addressRegion: "łódzkie",
+    addressCountry: "PL",
+  },
+  areaServed: "Tomaszów Mazowiecki",
+};
 
 // Landing page (/) — kolejność sekcji wg zatwierdzonego mockupu.
 export default function HomePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Hero />
       <Usp />
       <Subjects />
