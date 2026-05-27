@@ -9,7 +9,7 @@ export function ONasHero() {
       <Blob color="#3B8FF0" size={160} top={40} left={200} opacity={0.04} />
 
       <div className="relative z-[1] mx-auto max-w-[1080px] px-6">
-        <h1 className="mb-3 text-[36px] font-black leading-[1.15] tracking-[-0.5px] text-primary">
+        <h1 className="mb-3 text-[28px] font-black leading-[1.15] tracking-[-0.5px] text-primary sm:text-[32px] md:text-[36px]">
           O <span className="text-link">nas</span>
         </h1>
         <p className="max-w-[500px] text-[16px] font-medium leading-[1.7] text-secondary">

@@ -13,6 +13,8 @@ import type { Config } from "tailwindcss";
  */
 const config: Config = {
   darkMode: "class",
+  // Bez tego `hover:` "przykleja się" na ekranach dotykowych po tapnięciu.
+  future: { hoverOnlyWhenSupported: true },
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./lib/**/*.{js,ts,jsx,tsx,mdx}",
@@ -31,9 +33,12 @@ const config: Config = {
         subtle: "rgba(59,143,240,0.10)", // border-subtle
 
         // Kolory akcentowe — sekcja 3.3
+        // Uwaga: bg-primary ściemniony do #2470D0 dla AA contrast (4.65:1 z białym
+        // tekstem). Jasny niebieski #3B8FF0 zachowany jako text-link (textColor.link)
+        // — używany do linków tekstowych na ciemnym tle.
         primary: {
-          DEFAULT: "#3B8FF0", // CTA, linki, akcje główne
-          dark: "#2D7DE8", // hover na primary
+          DEFAULT: "#2470D0", // CTA, akcje główne (AA z białym tekstem)
+          dark: "#1F66C0", // hover na primary
         },
         secondary: "#FF6F4A", // pomarańczowy — wyróżnienia
         tertiary: "#FFCA28", // żółty — oczekujące
@@ -58,8 +63,8 @@ const config: Config = {
       textColor: {
         primary: "#F0EDE6", // text-primary
         secondary: "#9B97AF", // text-secondary
-        dim: "#6B6780", // text-dim
-        link: "#3B8FF0", // niebieski tekst / linki
+        dim: "#8B879D", // text-dim — rozjaśniony z #6B6780 dla AA na bg-main
+        link: "#3B8FF0", // niebieski tekst / linki (jasny — AA na bg ciemnych)
       },
 
       fontFamily: {

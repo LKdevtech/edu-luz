@@ -32,7 +32,7 @@ export async function submitContact(input: unknown): Promise<ContactResult> {
     return {
       ok: false,
       error:
-        "Formularz nie jest jeszcze skonfigurowany. Napisz bezpośrednio na kontakt@eduluz.pl.",
+        "Formularz nie jest jeszcze skonfigurowany. Napisz bezpośrednio na kontakt@edu-luz.com.",
     };
   }
 
@@ -62,7 +62,7 @@ export async function submitContact(input: unknown): Promise<ContactResult> {
   } catch {
     return {
       ok: false,
-      error: "Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz na kontakt@eduluz.pl.",
+      error: "Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz na kontakt@edu-luz.com.",
     };
   }
 }

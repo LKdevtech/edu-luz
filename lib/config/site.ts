@@ -1,7 +1,5 @@
 /**
  * Konfiguracja strony publicznej — nawigacja i dane kontaktowe.
- * Dane kontaktowe to PLACEHOLDERY (sekcja 7 CLAUDE.md) — do uzupełnienia
- * przez właściciela.
  */
 
 export interface NavLink {
@@ -17,21 +15,27 @@ export const NAV_LINKS: readonly NavLink[] = [
   { href: "/kontakt", label: "Kontakt" },
 ];
 
-// Linki prawne — placeholdery (strony powstaną później).
+// Linki prawne — strony powstaną później.
 export const LEGAL_LINKS: readonly NavLink[] = [
   { href: "#", label: "Regulamin" },
   { href: "#", label: "Polityka prywatności" },
 ];
 
-// Dane firmy i kontakt — PLACEHOLDERY (sekcja 7).
+// Dane firmy i kontakt — jedyne źródło prawdy.
 export const SITE = {
   name: "EDU LUZ",
   tagline: "Nowoczesna edukacja, zero stresu",
   city: "Tomaszów Mazowiecki",
-  address: "ul. — (do uzupełnienia)",
-  phone: "+48 — (do uzupełnienia)",
-  email: "kontakt@eduluz.pl",
-  hours: "Godziny otwarcia — (do uzupełnienia)",
+  addressLine1: "Tomax lok. 209C (drugie piętro)",
+  addressLine2: "ul. P.O.W. 17, 97-200 Tomaszów Mazowiecki",
+  phone: "604 607 934",
+  phoneTel: "+48604607934",
+  email: "kontakt@edu-luz.com",
+  hours: {
+    weekdays: "Poniedziałek – Piątek: 7:30 – 22:00",
+    saturday: "Sobota: 9:00 – 21:00",
+    sunday: "Niedziela: 10:00 – 21:00",
+  },
 } as const;
 
 /** Czy dany link nawigacji jest aktywny dla bieżącej ścieżki. */

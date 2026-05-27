@@ -47,7 +47,7 @@ interface SectionTitleProps {
 export function SectionTitle({ children, sub, className }: SectionTitleProps) {
   return (
     <div className={cn("mb-9", className)}>
-      <h2 className="mb-2 text-[28px] font-black leading-tight tracking-[-0.3px] text-primary">
+      <h2 className="mb-2 text-[22px] font-black leading-tight tracking-[-0.3px] text-primary sm:text-[26px] md:text-[28px]">
         {children}
       </h2>
       {sub && (

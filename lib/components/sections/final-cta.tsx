@@ -7,11 +7,11 @@ import { Blob } from "./blob";
 // CTA końcowe — gradientowa sekcja (mockup CTA).
 export function FinalCta() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary to-accent py-[72px]">
+    <section className="relative overflow-hidden bg-gradient-to-br from-primary to-accent py-14 md:py-[72px]">
       <Blob color="#fff" size={300} top={-100} right={-80} opacity={0.06} />
 
       <div className="relative z-[1] mx-auto max-w-[1080px] px-6 text-center">
-        <h2 className="mb-3 text-[32px] font-black text-white">
+        <h2 className="mb-3 text-[24px] font-black text-white sm:text-[28px] md:text-[32px]">
           Gotowy na naukę na luzie?
         </h2>
         <p className="mx-auto mb-8 max-w-[480px] text-[16px] font-medium leading-[1.7] text-white/75">

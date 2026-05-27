@@ -78,7 +78,7 @@ const SUBJECTS_FULL: SubjectDetail[] = [
 
 const PLANNED: { name: string; icon: string; flag: FlagCode; color: string; status: string }[] = [
   { name: "Włoski", icon: "🇮🇹", flag: "it", color: "#EF4444", status: "W planie" },
-  { name: "Niemiecki", icon: "🇩🇪", flag: "de", color: "#FBBF24", status: "W przygotowaniu" },
+  { name: "Niemiecki", icon: "🇩🇪", flag: "de", color: "#FBBF24", status: "W planie" },
 ];
 
 // "Nasze przedmioty" — rozwijana lista (mockup sekcja 6).

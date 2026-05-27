@@ -78,7 +78,7 @@ export function PriceCalculator({ table }: { table: PriceTable }) {
 
   return (
     <>
-      <div className="rounded-[22px] border border-subtle bg-surface px-6 py-7">
+      <div className="rounded-[22px] border border-subtle bg-surface px-4 py-6 sm:px-6 sm:py-7">
         <Label>Przedmiot</Label>
         <div className="mb-[22px] flex flex-wrap gap-2">
           {CALC_SUBJECTS.map((s) => (
@@ -112,7 +112,7 @@ export function PriceCalculator({ table }: { table: PriceTable }) {
         </div>
 
         <Label>Czas trwania</Label>
-        <div className="mb-7 flex gap-2">
+        <div className="mb-7 flex flex-wrap gap-2">
           {DURATIONS.map((d) => (
             <Chip key={d} active={selDuration === d} onClick={() => setSelDuration(d)}>
               {d} min
@@ -122,7 +122,7 @@ export function PriceCalculator({ table }: { table: PriceTable }) {
 
         {/* Wynik */}
         <div
-          className="rounded-2xl px-7 py-6"
+          className="rounded-2xl px-4 py-5 sm:px-7 sm:py-6"
           style={{
             background: `linear-gradient(135deg, ${subjectColor}12, #7C5CFC08)`,
             border: `1px solid ${subjectColor}20`,
@@ -163,11 +163,11 @@ export function PriceCalculator({ table }: { table: PriceTable }) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             {result ? (
               <div>
-                <p className="m-0 text-[36px] font-black text-primary">
+                <p className="m-0 text-[28px] font-black leading-[1.1] text-primary sm:text-[36px]">
                   {priceMode === "month"
                     ? formatRange(result.perMonth)
                     : formatRange(result.perLesson)}{" "}
-                  <span className="text-[16px] font-semibold text-secondary">
+                  <span className="text-[14px] font-semibold text-secondary sm:text-[16px]">
                     zł {priceMode === "month" ? "/ miesiąc" : "/ lekcja"}
                   </span>
                 </p>
@@ -177,7 +177,7 @@ export function PriceCalculator({ table }: { table: PriceTable }) {
               </div>
             ) : (
               <div className="max-w-[420px]">
-                <p className="m-0 text-[18px] font-extrabold text-primary">
+                <p className="m-0 text-[16px] font-extrabold text-primary sm:text-[18px]">
                   Ten przedmiot na wybranym poziomie nie jest jeszcze dostępny
                 </p>
                 <p className="mt-1.5 text-[12px] font-medium text-secondary">
@@ -187,7 +187,7 @@ export function PriceCalculator({ table }: { table: PriceTable }) {
             )}
             <Link
               href="/kontakt"
-              className="whitespace-nowrap rounded-[14px] bg-primary px-7 py-[13px] text-[14px] font-extrabold text-white shadow-[0_4px_16px_rgba(59,143,240,0.31)] transition-transform duration-200 hover:scale-[1.03]"
+              className="w-full whitespace-nowrap rounded-[14px] bg-primary px-7 py-[13px] text-center text-[14px] font-extrabold text-white shadow-[0_4px_16px_rgba(59,143,240,0.31)] transition-transform duration-200 hover:scale-[1.03] sm:w-auto"
             >
               Umów spotkanie →
             </Link>

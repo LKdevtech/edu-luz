@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { NAV_LINKS } from "@/lib/config/site";
+import { NAV_LINKS, SITE } from "@/lib/config/site";
 import { cn } from "@/lib/utils/cn";
 
 import { Logo } from "./logo";
@@ -28,9 +28,9 @@ export function Footer() {
             <p className="text-[13px] font-medium leading-[1.7] text-dim">
               Edukacja Na Luzie
               <br />
-              ul. [adres placeholder]
+              {SITE.addressLine1}
               <br />
-              Tomaszów Mazowiecki
+              {SITE.addressLine2}
             </p>
           </div>
 
@@ -48,11 +48,15 @@ export function Footer() {
           <div>
             <FooterHeading>Kontakt</FooterHeading>
             <p className="text-[13px] font-medium leading-[2] text-dim">
-              📞 +48 [telefon]
+              <a href={`tel:${SITE.phoneTel}`} className="transition-colors hover:text-secondary">
+                📞 {SITE.phone}
+              </a>
               <br />
-              ✉️ kontakt@eduluz.pl
+              <a href={`mailto:${SITE.email}`} className="transition-colors hover:text-secondary">
+                ✉️ {SITE.email}
+              </a>
               <br />
-              📍 Tomaszów Mazowiecki
+              📍 {SITE.city}
             </p>
           </div>
 

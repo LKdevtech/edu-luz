@@ -10,7 +10,7 @@ import { Section, SectionTitle } from "./section";
 export function Subjects() {
   return (
     <Section>
-      <SectionTitle sub="Dla uczniów szkół podstawowych i średnich. Każdy przedmiot prowadzony przez doświadczonego korepetytora.">
+      <SectionTitle sub="Dla uczniów szkół podstawowych i średnich. Prowadzone przez osoby młode, ale będące doświadczonymi korepetytorami.">
         Czego uczymy
       </SectionTitle>
 

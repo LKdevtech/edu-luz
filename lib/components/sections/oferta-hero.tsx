@@ -20,7 +20,7 @@ export function OfertaHero() {
           </span>
         </div>
 
-        <h1 className="mb-3 text-[36px] font-black leading-[1.15] tracking-[-0.5px] text-primary">
+        <h1 className="mb-3 text-[28px] font-black leading-[1.15] tracking-[-0.5px] text-primary sm:text-[32px] md:text-[36px]">
           Oferta i <span className="text-link">cennik</span>
         </h1>
 

@@ -1,19 +1,34 @@
 import { Section } from "./section";
 
-// PLACEHOLDER (sekcja 7) — lata do uzupełnienia.
 const STEPS = [
-  { year: "[rok]", text: "Pomysł — pierwszy uczeń, pierwsze zajęcia, pierwsze wnioski.", color: "#3B8FF0" },
-  { year: "[rok]", text: "Pierwsi korepetytorzy dołączają — tworzymy zespół z podejściem.", color: "#7C5CFC" },
-  { year: "[rok]", text: "Stałe centrum — jedno miejsce, stały grafik, pierwsze grupy.", color: "#FF6F4A" },
-  { year: "2026", text: "EDU LUZ v2 — panel online, notatki po lekcjach, system odrabiania.", color: "#FFCA28" },
+  {
+    year: "2023",
+    text: "Pomysł. Pierwszy uczeń, pierwsze zajęcia i wnioski.",
+    color: "#3B8FF0",
+  },
+  {
+    year: "2024",
+    text: "Więcej doświadczeń. Obserwacje jak wyglądają podobne centra, zbieranie kadry.",
+    color: "#7C5CFC",
+  },
+  {
+    year: "2025",
+    text: "Wielkie otwarcie. Nasze biuro, pierwsze grupy i pomysły co zrobić lepiej.",
+    color: "#FF6F4A",
+  },
+  {
+    year: "2026",
+    text: "Pierwsza wersja pełnego systemu do monitorowania zajęć, a od września pełna aplikacja EDU LUZ v2.",
+    color: "#FFCA28",
+  },
 ];
 
-// "Nasza droga" — timeline (mockup).
+// "Nasza droga" — timeline projektu (realne lata 2023–2026).
 export function ONasTimeline() {
   return (
     <Section alt className="py-14">
       <div className="mb-9 text-center">
-        <h2 className="text-[24px] font-black text-primary">
+        <h2 className="text-[20px] font-black text-primary sm:text-[22px] md:text-[24px]">
           Nasza <span className="text-tertiary">droga</span>
         </h2>
       </div>
@@ -22,7 +37,7 @@ export function ONasTimeline() {
         {STEPS.map((item, i) => {
           const isLast = i === STEPS.length - 1;
           return (
-            <div key={item.year + item.text} className="flex gap-5">
+            <div key={item.year} className="flex gap-5">
               <div className="flex w-5 flex-shrink-0 flex-col items-center">
                 <span
                   className="h-3.5 w-3.5 flex-shrink-0 rounded-full"

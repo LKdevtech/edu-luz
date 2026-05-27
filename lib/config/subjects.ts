@@ -76,6 +76,6 @@ export const SUBJECTS: Subject[] = [
     flag: "de",
     color: "#FBBF24",
     desc: "Gramatyka, słownictwo, przygotowanie do egzaminów",
-    planned: "W przygotowaniu",
+    planned: "W planie",
   },
 ];

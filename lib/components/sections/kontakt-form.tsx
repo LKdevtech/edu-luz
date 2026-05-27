@@ -100,7 +100,7 @@ export function KontaktForm() {
   const sending = status === "sending";
 
   return (
-    <div className="relative overflow-hidden rounded-[22px] border border-subtle bg-[linear-gradient(160deg,#232840_0%,#1F2440_100%)] px-7 py-8">
+    <div className="relative overflow-hidden rounded-[22px] border border-subtle bg-[linear-gradient(160deg,#232840_0%,#1F2440_100%)] px-5 py-7 sm:px-7 sm:py-8">
       <div className="absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,#3B8FF0,#7C5CFC)]" />
 
       {status === "sent" ? (

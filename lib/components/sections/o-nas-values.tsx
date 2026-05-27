@@ -44,7 +44,7 @@ export function ONasValues() {
   return (
     <Section alt className="py-14">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-[28px] font-black text-primary">
+        <h2 className="mb-2 text-[22px] font-black text-primary sm:text-[26px] md:text-[28px]">
           Nasze <span className="text-link">podejście</span>
         </h2>
         <p className="mx-auto max-w-[480px] text-[14px] font-medium text-secondary">

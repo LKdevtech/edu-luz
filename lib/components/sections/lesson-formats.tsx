@@ -10,7 +10,7 @@ const FORMATS: LessonFormat[] = [
     tags: ["45 min", "60 min", "90 min", "120 min"],
     color: "#3B8FF0",
     details:
-      "Korepetytor dopasowuje materiał do poziomu i celów ucznia. Idealne dla osób potrzebujących intensywnego nadrobienia zaległości lub przygotowania do egzaminu. Po każdej lekcji notatka w panelu.",
+      "Korepetytor dopasowuje materiał do poziomu i celów ucznia. Idealne dla osób potrzebujących intensywnego nadrobienia zaległości lub przygotowania do poprawy sprawdzianów i testów. Personalizacja całego planu nauczania i zajęć.",
   },
   {
     emoji: "👥",
@@ -19,7 +19,7 @@ const FORMATS: LessonFormat[] = [
     tags: ["60 min", "90 min", "120 min"],
     color: "#7C5CFC",
     details:
-      "Dobieramy pary o zbliżonym poziomie i celach. Uczniowie uczą się od siebie nawzajem, a koszt dzieli się na dwoje. Świetna opcja dla rodzeństwa lub znajomych.",
+      "Dobieramy pary o zbliżonym poziomie i celach. Uczą się nie tylko od korepetytora, ale też od siebie nawzajem — koszt dzieli się na dwie osoby. Świetna opcja dla znajomych lub osób, które przygotowują się do egzaminów ósmoklasisty lub maturalnych.",
   },
   {
     emoji: "👨‍👩‍👧‍👦",
@@ -28,7 +28,7 @@ const FORMATS: LessonFormat[] = [
     tags: ["60 min", "90 min", "120 min"],
     color: "#FF6F4A",
     details:
-      "Grupy max. 4 osoby — każdy uczestnik dostaje uwagę. Praca nad wspólnym materiałem, rozwiązywanie zadań w zespole. Idealne na bieżące powtórki i utrwalanie wiedzy.",
+      "Grupy maksymalnie 4-osobowe. Każdemu poświęcamy uwagę i dbamy o wszystkich członków grupy. Idealne na bieżące powtórki jako dodatek do zajęć w szkole i przygotowania do egzaminów ósmoklasisty oraz matur.",
   },
   {
     emoji: "🚀",
@@ -37,7 +37,7 @@ const FORMATS: LessonFormat[] = [
     tags: ["weekendowe", "wakacyjne", "maturalne", "egzamin 8-kl."],
     color: "#FFCA28",
     details:
-      "Kursy zamknięte z konkretnym celem i harmonogramem. Intensywne powtórki przed maturą, letnie warsztaty uzupełniające braki, przygotowanie do egzaminu ósmoklasisty. Terminy i szczegóły na bieżąco w ofercie.",
+      "Kursy zamknięte z konkretnym celem i harmonogramem. Intensywne powtórki przed maturą, przygotowanie do egzaminu ósmoklasisty, letnie warsztaty uzupełniające braki. O terminy i dostępne w najbliższym czasie kursy można wysłać zapytanie lub zapisać się na listę oczekujących.",
     special: true,
   },
 ];

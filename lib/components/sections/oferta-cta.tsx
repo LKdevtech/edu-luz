@@ -7,7 +7,7 @@ export function OfertaCta() {
   return (
     <section className="bg-gradient-to-br from-primary to-accent py-14">
       <div className="mx-auto max-w-[1080px] px-6 text-center">
-        <h2 className="mb-2 text-[28px] font-black text-white">Nie wiesz co wybrać?</h2>
+        <h2 className="mb-2 text-[22px] font-black text-white sm:text-[26px] md:text-[28px]">Nie wiesz co wybrać?</h2>
         <p className="mx-auto mb-7 max-w-[420px] text-[15px] font-medium text-white/70">
           Umów bezpłatne spotkanie — pomożemy dobrać przedmiot, formę i korepetytora.
         </p>

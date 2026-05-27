@@ -69,7 +69,7 @@ export function ExpandableFormatCard({ item }: { item: LessonFormat }) {
       <div
         className="overflow-hidden transition-[max-height,opacity,margin] duration-300 ease-out"
         style={{
-          maxHeight: expanded ? 200 : 0,
+          maxHeight: expanded ? 480 : 0,
           opacity: expanded ? 1 : 0,
           marginTop: expanded ? 12 : 0,
         }}

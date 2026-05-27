@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { SubjectGlyph } from "@/lib/components/ui/subject-glyph";
@@ -20,7 +21,21 @@ function Pill({ color, children }: { color: string; children: React.ReactNode })
 // Hero — odwzorowanie mockupu (2 kolumny, gradientowy nagłówek, blur blobs).
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#151827_0%,#111422_100%)] pb-16 pt-20">
+    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#151827_0%,#111422_100%)] pb-12 pt-12 sm:pb-14 sm:pt-16 md:pb-16 md:pt-20">
+      {/* Zdjęcie sali jako subtelne tło — niska opacity + dark overlay,
+          żeby nie konkurowało z tekstem i CTA. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <Image
+          src="/images/sala.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-[0.08]"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(21,24,39,0.7)_0%,rgba(21,24,39,0.35)_50%,rgba(17,20,34,0.92)_100%)]" />
+      </div>
+
       <Blob color="#3B8FF0" size={340} top={-80} right={-60} />
       <Blob color="#FF6F4A" size={240} bottom={-40} left={-40} opacity={0.04} />
       <Blob color="#7C5CFC" size={180} top={120} right={200} opacity={0.03} />
@@ -46,7 +61,7 @@ export function Hero() {
             </span>
           </div>
 
-          <h1 className="mb-5 text-[44px] font-black leading-[1.12] tracking-[-1px] text-primary">
+          <h1 className="mb-5 text-[32px] font-black leading-[1.12] tracking-[-1px] text-primary sm:text-[38px] md:text-[44px]">
             Korepetycje
             <br />
             <span className="text-link">bez stresu</span>,<br />
@@ -83,31 +98,10 @@ export function Hero() {
                 <SubjectGlyph icon={s.icon} flag={s.flag} size={15} /> {s.name}
               </Pill>
             ))}
-            <Pill color="#6B6780">+2 wkrótce</Pill>
+            <Pill color="#6B6780">+2 w planie</Pill>
           </div>
         </div>
 
-        {/* Prawa kolumna — placeholder ilustracji */}
-        <div className="flex flex-[1_1_360px] justify-center">
-          <div className="flex aspect-[4/3] w-full max-w-[380px] flex-col items-center justify-center gap-2 rounded-3xl border border-subtle bg-surface text-[13px] text-dim">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              className="opacity-40"
-              aria-hidden="true"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="4" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="m21 15-5-5L5 21" />
-            </svg>
-            <span className="font-semibold">Ilustracja / zdjęcie centrum</span>
-            <span className="text-[11px] text-dim">Placeholder — dodasz później</span>
-          </div>
-        </div>
       </div>
     </section>
   );

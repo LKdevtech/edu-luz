@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { SITE } from "@/lib/config/site";
+
 import { Blob } from "./blob";
 import { KontaktForm } from "./kontakt-form";
 
@@ -66,15 +68,15 @@ export function KontaktContact() {
             <ContactItem
               icon="📞"
               label="Telefon"
-              value="+48 [numer placeholder]"
-              href="tel:+48000000000"
+              value={SITE.phone}
+              href={`tel:${SITE.phoneTel}`}
               color="#22C55E"
             />
             <ContactItem
               icon="✉️"
               label="Email"
-              value="kontakt@eduluz.pl"
-              href="mailto:kontakt@eduluz.pl"
+              value={SITE.email}
+              href={`mailto:${SITE.email}`}
               color="#3B8FF0"
             />
             <ContactItem
@@ -82,9 +84,9 @@ export function KontaktContact() {
               label="Adres"
               value={
                 <>
-                  [adres placeholder]
+                  {SITE.addressLine1}
                   <br />
-                  Tomaszów Mazowiecki
+                  {SITE.addressLine2}
                 </>
               }
               color="#FF6F4A"
@@ -94,9 +96,11 @@ export function KontaktContact() {
               label="Godziny zajęć"
               value={
                 <>
-                  Pon–Pt: 14:00–20:00
+                  {SITE.hours.weekdays}
                   <br />
-                  Sob: 9:00–14:00
+                  {SITE.hours.saturday}
+                  <br />
+                  {SITE.hours.sunday}
                 </>
               }
               color="#7C5CFC"
@@ -124,9 +128,6 @@ export function KontaktContact() {
                 </div>
               ))}
             </div>
-            <p className="mt-2.5 text-center text-[10px] font-medium italic text-dim">
-              Wkrótce — śledź nas po aktualizacje
-            </p>
           </div>
 
           {/* CTA telefoniczny */}
@@ -138,7 +139,7 @@ export function KontaktContact() {
                 Zadzwoń — chętnie odpowiemy na pytania i umówimy bezpłatne spotkanie.
               </p>
               <a
-                href="tel:+48000000000"
+                href={`tel:${SITE.phoneTel}`}
                 className="inline-block rounded-[12px] bg-[linear-gradient(135deg,#3B8FF0,#2D7DE8)] px-6 py-2.5 text-[13px] font-extrabold text-white shadow-[0_4px_16px_rgba(59,143,240,0.31)] transition-all duration-150 hover:scale-[1.03] hover:shadow-[0_6px_24px_rgba(59,143,240,0.5)]"
               >
                 Zadzwoń teraz →

@@ -11,5 +11,9 @@ export const metadata: Metadata = {
 
 // Logowanie (/login) — poza grupą (public): bez navbara i footera.
 export default function LoginPage() {
-  return <LoginScreen />;
+  return (
+    <main>
+      <LoginScreen />
+    </main>
+  );
 }

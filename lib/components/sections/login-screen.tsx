@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type ReactNode } from "react";
 
 // Logowanie — TYLKO UI (sekcja 6.6). Bez podpięcia do Supabase Auth:
@@ -145,9 +146,14 @@ export function LoginScreen() {
       <div className="relative z-[1] w-full max-w-[400px]">
         {/* Logo + tagline */}
         <div className="mb-5 text-center">
-          <div className="mb-2 inline-flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-primary text-[26px] font-black italic tracking-[-2px] text-white">
-            Ez
-          </div>
+          <Image
+            src="/logo-ez.png"
+            alt="EDU LUZ"
+            width={56}
+            height={56}
+            priority
+            className="mx-auto mb-2"
+          />
           <div>
             <span className="text-[20px] font-black text-primary">
               EDU <span className="text-link">LUZ</span>
@@ -242,7 +248,7 @@ export function LoginScreen() {
             <div className="mt-5 text-center">
               <p className="text-[11px] font-medium text-dim">
                 Nie masz konta? Skontaktuj się z centrum —{" "}
-                <span className="font-bold text-link">kontakt@eduluz.pl</span>
+                <span className="font-bold text-link">kontakt@edu-luz.com</span>
               </p>
             </div>
           </>

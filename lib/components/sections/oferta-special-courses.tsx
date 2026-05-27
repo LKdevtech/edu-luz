@@ -6,13 +6,13 @@ const TAGS = ["Maturalne", "Egzamin 8-kl.", "Wakacyjne", "Weekendowe"];
 export function OfertaSpecialCourses() {
   return (
     <Section alt className="py-14">
-      <div className="relative overflow-hidden rounded-[22px] border border-accent/20 bg-[linear-gradient(135deg,rgba(124,92,252,0.08),rgba(255,111,74,0.06))] px-8 py-9">
+      <div className="relative overflow-hidden rounded-[22px] border border-accent/20 bg-[linear-gradient(135deg,rgba(124,92,252,0.08),rgba(255,111,74,0.06))] px-5 py-7 sm:px-7 sm:py-8 md:px-8 md:py-9">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,#FFCA28,#FF6F4A)]" />
 
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex-[1_1_400px]">
             <span className="mb-2 block text-[32px]">🚀</span>
-            <h3 className="mb-2 text-[22px] font-black text-primary">
+            <h3 className="mb-2 text-[19px] font-black text-primary sm:text-[22px]">
               Kursy specjalne i okazyjne
             </h3>
             <p className="mb-4 text-[14px] font-medium leading-[1.7] text-secondary">
