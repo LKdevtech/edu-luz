@@ -1,7 +1,7 @@
 "use server";
 
-import { z } from "zod";
 import { Resend } from "resend";
+import { z } from "zod";
 
 // Walidacja formularza kontaktowego (sekcja 9.3 — Zod).
 const contactSchema = z.object({
@@ -15,9 +15,13 @@ const contactSchema = z.object({
 export type ContactInput = z.infer<typeof contactSchema>;
 export type ContactResult = { ok: true } | { ok: false; error: string };
 
+// Stałe biznesowe — adresy nadawcy i odbiorcy są tu hardcoded zamiast w env,
+// bo to nie sekrety, tylko dane domenowe (Resend ma zweryfikowaną edu-luz.com).
+const TO_EMAIL = "kontakt@edu-luz.com";
+const FROM_EMAIL = "EDU LUZ <noreply@edu-luz.com>";
+
 // Server Action — waliduje i wysyła wiadomość mailem przez Resend (decyzja 8).
-// Bez zapisu do bazy. Wymaga zmiennych: RESEND_API_KEY, CONTACT_TO_EMAIL,
-// CONTACT_FROM_EMAIL (patrz .env.example).
+// Bez zapisu do bazy. Wymaga zmiennej środowiskowej RESEND_API_KEY.
 export async function submitContact(input: unknown): Promise<ContactResult> {
   const parsed = contactSchema.safeParse(input);
   if (!parsed.success) {
@@ -25,10 +29,7 @@ export async function submitContact(input: unknown): Promise<ContactResult> {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_TO_EMAIL;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !to || !from) {
+  if (!apiKey) {
     return {
       ok: false,
       error:
@@ -41,8 +42,8 @@ export async function submitContact(input: unknown): Promise<ContactResult> {
   try {
     const resend = new Resend(apiKey);
     const { error } = await resend.emails.send({
-      from,
-      to,
+      from: FROM_EMAIL,
+      to: TO_EMAIL,
       replyTo: email,
       subject: `Formularz kontaktowy${topic ? ` — ${topic}` : ""}: ${name}`,
       text: [
