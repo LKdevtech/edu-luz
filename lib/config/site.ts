@@ -15,10 +15,10 @@ export const NAV_LINKS: readonly NavLink[] = [
   { href: "/kontakt", label: "Kontakt" },
 ];
 
-// Linki prawne — strony powstaną później.
+// Linki prawne — podstrony regulamin + polityka prywatności.
 export const LEGAL_LINKS: readonly NavLink[] = [
-  { href: "#", label: "Regulamin" },
-  { href: "#", label: "Polityka prywatności" },
+  { href: "/regulamin", label: "Regulamin" },
+  { href: "/polityka-prywatnosci", label: "Polityka prywatności" },
 ];
 
 // Dane firmy i kontakt — jedyne źródło prawdy.
@@ -37,6 +37,25 @@ export const SITE = {
     sunday: "Niedziela: 10:00 – 21:00",
   },
 } as const;
+
+// Dane podmiotu prowadzącego — administrator danych (RODO) i strona umowy
+// świadczenia usług elektronicznych. Używane w polityce prywatności i regulaminie.
+export const COMPANY = {
+  legalName: "LK&P Services Sp. z o.o.",
+  nip: "7732515612",
+  krs: "[DO UZUPEŁNIENIA]",
+  regon: "[DO UZUPEŁNIENIA]",
+  representative: "[Imię i nazwisko reprezentanta — DO UZUPEŁNIENIA]",
+  // Adres rejestrowy — jeśli różny od adresu siedziby, podmień osobno.
+  registeredAddress: {
+    line1: "Tomax lok. 209C (drugie piętro)",
+    line2: "ul. P.O.W. 17, 97-200 Tomaszów Mazowiecki",
+  },
+} as const;
+
+// Data ostatniej aktualizacji dokumentów prawnych — wyświetlana na obu podstronach.
+// Aktualizuj przy każdej znaczącej zmianie regulaminu lub polityki.
+export const LEGAL_UPDATED_AT = "2026-05-27";
 
 /** Czy dany link nawigacji jest aktywny dla bieżącej ścieżki. */
 export function isActivePath(pathname: string, href: string): boolean {

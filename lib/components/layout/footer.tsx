@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { NAV_LINKS, SITE } from "@/lib/config/site";
+import { COMPANY, LEGAL_LINKS, NAV_LINKS, SITE } from "@/lib/config/site";
 import { cn } from "@/lib/utils/cn";
 
 import { Logo } from "./logo";
@@ -74,15 +74,18 @@ export function Footer() {
 
         <div className="flex flex-wrap justify-between gap-3 border-t border-subtle pt-6">
           <p className="text-[11px] font-medium text-dim">
-            © 2026 EDU LUZ Edukacja Na Luzie. Wszelkie prawa zastrzeżone.
+            © 2026 {COMPANY.legalName}. Wszelkie prawa zastrzeżone.
           </p>
           <div className="flex gap-5">
-            <Link href="#" className="text-[11px] font-medium text-dim transition-colors hover:text-secondary">
-              Polityka prywatności
-            </Link>
-            <Link href="#" className="text-[11px] font-medium text-dim transition-colors hover:text-secondary">
-              Regulamin
-            </Link>
+            {LEGAL_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-[11px] font-medium text-dim transition-colors hover:text-secondary"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

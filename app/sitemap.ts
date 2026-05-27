@@ -10,5 +10,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/oferta`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/o-nas`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/kontakt`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    {
+      url: `${SITE_URL}/regulamin`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${SITE_URL}/polityka-prywatnosci`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
 }
