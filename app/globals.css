@@ -16,3 +16,14 @@ html {
     text-rendering: optimizeLegibility;
   }
 }
+
+/* Utility — ukrycie scrollbara dla mobile carousel (zachowuje funkcjonalność). */
+@layer utilities {
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

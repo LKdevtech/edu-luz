@@ -11,10 +11,10 @@ const DIRECTIONS = [
   { icon: "🚶", text: "Centrum miasta — kilka minut spacerem", color: "#22C55E" },
 ];
 
-// Pełny adres do zapytania Google Maps — uwzględnia kod pocztowy dla
-// jednoznacznego rozpoznania lokalizacji w Tomaszowie Mazowieckim.
-const MAP_QUERY = "ul. P.O.W. 17, 97-200 Tomaszów Mazowiecki";
-const MAP_SRC = `https://maps.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&z=16&output=embed`;
+// Zapytanie do Google Maps — uwzględnia nazwę budynku TOMAX żeby
+// pinezka trafiła dokładnie w wejście, a nie gdzieś na ulicy.
+const MAP_QUERY = "TOMAX, ul. P.O.W. 17, 97-200 Tomaszów Mazowiecki, Polska";
+const MAP_SRC = `https://maps.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&z=17&output=embed`;
 const MAP_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(MAP_QUERY)}`;
 
 export function KontaktMap() {

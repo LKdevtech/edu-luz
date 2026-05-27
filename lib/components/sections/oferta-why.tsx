@@ -31,17 +31,23 @@ export function OfertaWhy() {
         Dlaczego warto <span className="text-link">wybrać nas</span>
       </SectionTitle>
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+      <div className="grid gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
         {ITEMS.map((item) => (
           <div
             key={item.title}
             className="rounded-[20px] border border-subtle bg-surface px-[22px] py-6 transition-all duration-[250ms] hover:-translate-y-0.5 hover:bg-surface-hover"
           >
-            <span className="mb-3 block text-[28px]">{item.icon}</span>
-            <p className="mb-1.5 text-[16px] font-extrabold text-primary">{item.title}</p>
-            <p className="text-[13px] font-medium leading-[1.7] text-secondary">
-              {item.desc}
-            </p>
+            <div className="flex items-start gap-4 md:block">
+              <span className="flex-shrink-0 text-[32px] leading-none md:mb-3 md:block md:text-[28px]">
+                {item.icon}
+              </span>
+              <div className="flex-1">
+                <p className="mb-1.5 text-[16px] font-extrabold text-primary">{item.title}</p>
+                <p className="text-[13px] font-medium leading-[1.7] text-secondary">
+                  {item.desc}
+                </p>
+              </div>
+            </div>
           </div>
         ))}
       </div>

@@ -31,28 +31,32 @@ export function MobileDrawer({ open, onClose, pathname }: MobileDrawerProps) {
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 md:hidden",
+        // z-[60] nakrywa navbar (z-50), żeby przezroczyste tło navbara nie
+        // przeświecało przez drawer od góry.
+        "fixed inset-0 z-[60] md:hidden",
         open ? "pointer-events-auto" : "pointer-events-none",
       )}
       aria-hidden={!open}
     >
-      {/* Overlay */}
+      {/* Overlay — mocniejsze ciemne tło + blur, żeby strona za drawerem była
+          wyraźnie odcięta wizualnie. */}
       <button
         type="button"
         aria-label="Zamknij menu"
         tabIndex={open ? 0 : -1}
         onClick={onClose}
         className={cn(
-          "absolute inset-0 h-full w-full bg-black/60 transition-opacity duration-300",
+          "absolute inset-0 h-full w-full bg-black/80 backdrop-blur-sm transition-opacity duration-300",
           open ? "opacity-100" : "opacity-0",
         )}
       />
 
-      {/* Panel */}
+      {/* Panel — bg-main (najciemniejsze) zamiast bg-alt, dla maksymalnej
+          czytelności tekstu menu na mobile. */}
       <nav
         aria-label="Menu mobilne"
         className={cn(
-          "absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col gap-1 border-l border-subtle bg-alt p-6 shadow-2xl transition-transform duration-300 ease-out",
+          "absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col gap-1 border-l border-subtle bg-main p-6 shadow-2xl transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >

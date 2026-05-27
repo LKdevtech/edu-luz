@@ -1,3 +1,5 @@
+import { MobileCarousel } from "@/lib/components/ui/mobile-carousel";
+
 import { Blob } from "./blob";
 import { Section } from "./section";
 
@@ -85,6 +87,47 @@ const TUTORS: Tutor[] = [
   },
 ];
 
+function TutorCard({ t }: { t: Tutor }) {
+  return (
+    <div
+      className="flex h-full flex-col rounded-[20px] border border-subtle bg-surface px-6 py-7 transition-all duration-[250ms] hover:-translate-y-[3px] hover:bg-surface-hover"
+      style={{ borderTop: `3px solid ${t.color}` }}
+    >
+      <div
+        className="mb-4 flex h-14 w-14 items-center justify-center rounded-[16px] text-[20px] font-black tracking-[-1px]"
+        style={{
+          background: `linear-gradient(135deg, ${t.color}30, ${t.color}10)`,
+          border: `1.5px solid ${t.color}25`,
+          color: t.color,
+        }}
+      >
+        {t.initials}
+      </div>
+      <p className="mb-1 text-[18px] font-black text-primary">{t.name}</p>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {t.subjects.map((s) => (
+          <span
+            key={s.name}
+            className="rounded-lg px-2.5 py-[3px] text-[10px] font-bold tracking-[0.3px]"
+            style={{ background: `${s.color}15`, color: s.color }}
+          >
+            {s.name}
+          </span>
+        ))}
+      </div>
+      <p className="mb-4 flex-1 text-[13px] font-medium leading-[1.7] text-secondary">
+        {t.bio}
+      </p>
+      <div
+        className="inline-flex w-fit items-center gap-1 rounded-[10px] px-3.5 py-1.5 text-[11px] font-bold"
+        style={{ background: `${t.color}12`, color: t.color }}
+      >
+        ⭐ {t.highlight}
+      </div>
+    </div>
+  );
+}
+
 // "Nasz zespół" — karty korepetytorów z realnymi bio.
 export function ONasTeam() {
   return (
@@ -103,45 +146,19 @@ export function ONasTeam() {
             </p>
           </div>
 
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
+          {/* Mobile: karuzela (auto-scroll 4s) */}
+          <div className="md:hidden">
+            <MobileCarousel ariaLabel="Zespół korepetytorów" intervalMs={4000}>
+              {TUTORS.map((t) => (
+                <TutorCard key={t.name} t={t} />
+              ))}
+            </MobileCarousel>
+          </div>
+
+          {/* Desktop: grid */}
+          <div className="hidden gap-4 md:grid md:[grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
             {TUTORS.map((t) => (
-              <div
-                key={t.name}
-                className="flex flex-col rounded-[20px] border border-subtle bg-surface px-6 py-7 transition-all duration-[250ms] hover:-translate-y-[3px] hover:bg-surface-hover"
-                style={{ borderTop: `3px solid ${t.color}` }}
-              >
-                <div
-                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-[16px] text-[20px] font-black tracking-[-1px]"
-                  style={{
-                    background: `linear-gradient(135deg, ${t.color}30, ${t.color}10)`,
-                    border: `1.5px solid ${t.color}25`,
-                    color: t.color,
-                  }}
-                >
-                  {t.initials}
-                </div>
-                <p className="mb-1 text-[18px] font-black text-primary">{t.name}</p>
-                <div className="mb-3 flex flex-wrap gap-1.5">
-                  {t.subjects.map((s) => (
-                    <span
-                      key={s.name}
-                      className="rounded-lg px-2.5 py-[3px] text-[10px] font-bold tracking-[0.3px]"
-                      style={{ background: `${s.color}15`, color: s.color }}
-                    >
-                      {s.name}
-                    </span>
-                  ))}
-                </div>
-                <p className="mb-4 flex-1 text-[13px] font-medium leading-[1.7] text-secondary">
-                  {t.bio}
-                </p>
-                <div
-                  className="inline-flex w-fit items-center gap-1 rounded-[10px] px-3.5 py-1.5 text-[11px] font-bold"
-                  style={{ background: `${t.color}12`, color: t.color }}
-                >
-                  ⭐ {t.highlight}
-                </div>
-              </div>
+              <TutorCard key={t.name} t={t} />
             ))}
           </div>
         </div>

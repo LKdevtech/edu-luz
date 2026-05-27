@@ -32,14 +32,20 @@ export function Usp() {
         Dlaczego <span className="text-link">EDU LUZ</span>?
       </SectionTitle>
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+      <div className="grid gap-4 md:[grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
         {USP_ITEMS.map((item) => (
           <div key={item.title} className={cardHover}>
-            <div className="mb-3 text-[28px]">{item.icon}</div>
-            <p className="mb-1.5 text-[16px] font-extrabold text-primary">{item.title}</p>
-            <p className="text-[13px] font-medium leading-[1.7] text-secondary">
-              {item.desc}
-            </p>
+            <div className="flex items-start gap-4 md:block">
+              <div className="flex-shrink-0 text-[32px] leading-none md:mb-3 md:text-[28px]">
+                {item.icon}
+              </div>
+              <div className="flex-1">
+                <p className="mb-1.5 text-[16px] font-extrabold text-primary">{item.title}</p>
+                <p className="text-[13px] font-medium leading-[1.7] text-secondary">
+                  {item.desc}
+                </p>
+              </div>
+            </div>
           </div>
         ))}
       </div>

@@ -32,39 +32,45 @@ export function ExpandableFormatCard({ item }: { item: LessonFormat }) {
         />
       )}
 
-      <div className="mb-3 text-[32px]">{item.emoji}</div>
-      <p className="mb-2 text-[18px] font-extrabold text-primary">{item.title}</p>
-      <p className="mb-3.5 text-[13px] font-medium leading-[1.7] text-secondary">
-        {item.desc}
-      </p>
+      <div className="flex items-start gap-4 md:block">
+        <div className="flex-shrink-0 text-[36px] leading-none md:mb-3 md:text-[32px]">
+          {item.emoji}
+        </div>
+        <div className="flex-1">
+          <p className="mb-2 text-[18px] font-extrabold text-primary">{item.title}</p>
+          <p className="mb-3.5 text-[13px] font-medium leading-[1.7] text-secondary">
+            {item.desc}
+          </p>
 
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {item.tags.map((tag) => (
-          <span
-            key={tag}
-            className="rounded-lg px-3 py-1 text-[11px] font-bold"
-            style={{ background: `${item.color}15`, color: item.color }}
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {item.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-lg px-3 py-1 text-[11px] font-bold"
+                style={{ background: `${item.color}15`, color: item.color }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="flex items-center gap-1 text-[12px] font-bold"
+            style={{ color: item.color }}
+            aria-expanded={expanded}
           >
-            {tag}
-          </span>
-        ))}
+            {expanded ? "Zwiń" : "Więcej szczegółów"}
+            <span
+              className="inline-block transition-transform duration-200"
+              style={{ transform: expanded ? "rotate(180deg)" : "none" }}
+            >
+              ▼
+            </span>
+          </button>
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1 text-[12px] font-bold"
-        style={{ color: item.color }}
-        aria-expanded={expanded}
-      >
-        {expanded ? "Zwiń" : "Więcej szczegółów"}
-        <span
-          className="inline-block transition-transform duration-200"
-          style={{ transform: expanded ? "rotate(180deg)" : "none" }}
-        >
-          ▼
-        </span>
-      </button>
 
       <div
         className="overflow-hidden transition-[max-height,opacity,margin] duration-300 ease-out"

@@ -1,3 +1,5 @@
+import { MobileCarousel } from "@/lib/components/ui/mobile-carousel";
+
 import { Section, SectionTitle, cardBase } from "./section";
 
 interface Testimonial {
@@ -49,7 +51,23 @@ export function SocialProof() {
         Co o nas mówią
       </SectionTitle>
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
+      {/* Mobile: karuzela (opinie są długie — wolniejszy auto-scroll 6s) */}
+      <div className="md:hidden">
+        <MobileCarousel ariaLabel="Opinie rodziców" intervalMs={6000}>
+          {TESTIMONIALS.map((t) => (
+            <div key={t.author} className={`${cardBase} relative h-full`}>
+              <Stars value={t.stars} />
+              <p className="mb-3.5 text-[14px] font-medium italic leading-[1.75] text-primary">
+                „{t.quote}”
+              </p>
+              <p className="text-[12px] font-bold text-dim">— {t.author}</p>
+            </div>
+          ))}
+        </MobileCarousel>
+      </div>
+
+      {/* Desktop: grid */}
+      <div className="hidden gap-4 md:grid md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
         {TESTIMONIALS.map((t) => (
           <div key={t.author} className={`${cardBase} relative`}>
             <Stars value={t.stars} />
