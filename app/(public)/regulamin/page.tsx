@@ -71,6 +71,7 @@ export default function RegulaminPage() {
             <strong className="text-primary">{COMPANY.legalName}</strong> z siedzibą pod
             adresem {COMPANY.registeredAddress.line1}, {COMPANY.registeredAddress.line2},
             NIP: {COMPANY.nip}, KRS: {COMPANY.krs}, REGON: {COMPANY.regon}.
+            Reprezentant: {COMPANY.representative}.
           </li>
           <li>
             Kontakt z Usługodawcą jest możliwy pod adresem e-mail{" "}

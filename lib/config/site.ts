@@ -43,9 +43,9 @@ export const SITE = {
 export const COMPANY = {
   legalName: "LK&P Services Sp. z o.o.",
   nip: "7732515612",
-  krs: "[DO UZUPEŁNIENIA]",
-  regon: "[DO UZUPEŁNIENIA]",
-  representative: "[Imię i nazwisko reprezentanta — DO UZUPEŁNIENIA]",
+  krs: "0001221728",
+  regon: "543892038",
+  representative: "Kacper Luchowski, Prezes Zarządu",
   // Adres rejestrowy — jeśli różny od adresu siedziby, podmień osobno.
   registeredAddress: {
     line1: "Tomax lok. 209C (drugie piętro)",
