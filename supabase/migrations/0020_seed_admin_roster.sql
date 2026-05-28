@@ -524,3 +524,14 @@ insert into payment_lines (payment_id, student_id, class_id, description, lesson
   ('60000000-0000-0000-0000-000000000040', '99999999-0000-0000-0000-000000000046', 'dddd0003-0000-0000-0000-000000000008', 'Matematyka — indyw. (E8)', 2, 420.00),
   ('60000000-0000-0000-0000-000000000041', '99999999-0000-0000-0000-000000000046', 'dddd0003-0000-0000-0000-000000000008', 'Matematyka — indyw. (E8)', 2, 420.00),
   ('60000000-0000-0000-0000-000000000042', '99999999-0000-0000-0000-000000000046', 'dddd0003-0000-0000-0000-000000000008', 'Matematyka — indyw. (E8)', 2, 420.00);
+
+-- ============================================================================
+-- Reconciliacja statusu lekcji vs wpisy.
+-- Zrealizowana lekcja z OPUBLIKOWANYM wpisem NIE MOŻE mieć statusu
+-- completed_no_entry (inaczej harmonogram pokaże ją żółtą „bez wpisu", mimo że
+-- wpis istnieje). Idempotentne — bezpieczne przy każdym reset/seed.
+-- ============================================================================
+update lessons
+set status = 'completed'
+where status = 'completed_no_entry'
+  and id in (select lesson_id from entries where status = 'published');
