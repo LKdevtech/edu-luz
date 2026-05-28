@@ -217,9 +217,11 @@ export type Database = {
           created_by: string | null
           end_date: string | null
           form: Database["public"]["Enums"]["class_form"]
+          goal: Database["public"]["Enums"]["class_goal"] | null
           group_id: string | null
           id: string
           level: Database["public"]["Enums"]["student_level"]
+          level_scope: Database["public"]["Enums"]["class_level_scope"] | null
           monthly_fee: number
           notes: string | null
           room_id: string | null
@@ -234,9 +236,11 @@ export type Database = {
           created_by?: string | null
           end_date?: string | null
           form: Database["public"]["Enums"]["class_form"]
+          goal?: Database["public"]["Enums"]["class_goal"] | null
           group_id?: string | null
           id?: string
           level: Database["public"]["Enums"]["student_level"]
+          level_scope?: Database["public"]["Enums"]["class_level_scope"] | null
           monthly_fee: number
           notes?: string | null
           room_id?: string | null
@@ -251,9 +255,11 @@ export type Database = {
           created_by?: string | null
           end_date?: string | null
           form?: Database["public"]["Enums"]["class_form"]
+          goal?: Database["public"]["Enums"]["class_goal"] | null
           group_id?: string | null
           id?: string
           level?: Database["public"]["Enums"]["student_level"]
+          level_scope?: Database["public"]["Enums"]["class_level_scope"] | null
           monthly_fee?: number
           notes?: string | null
           room_id?: string | null
@@ -1056,6 +1062,44 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parents: {
         Row: {
           address: string | null
@@ -1773,6 +1817,8 @@ export type Database = {
     Enums: {
       attendance_status: "present" | "absent"
       class_form: "individual" | "pair" | "group"
+      class_goal: "e8" | "matura" | "support"
+      class_level_scope: "basic" | "extended"
       entry_status: "missing" | "draft" | "published" | "locked" | "blocked"
       lesson_status:
         | "planned"
@@ -1953,6 +1999,8 @@ export const Constants = {
     Enums: {
       attendance_status: ["present", "absent"],
       class_form: ["individual", "pair", "group"],
+      class_goal: ["e8", "matura", "support"],
+      class_level_scope: ["basic", "extended"],
       entry_status: ["missing", "draft", "published", "locked", "blocked"],
       lesson_status: [
         "planned",

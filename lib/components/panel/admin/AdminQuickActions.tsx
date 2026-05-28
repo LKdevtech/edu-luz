@@ -140,6 +140,8 @@ function AddStudentModal({
   const [classSubjectId, setClassSubjectId] = useState('')
   const [classTutorId, setClassTutorId] = useState('')
   const [classFee, setClassFee] = useState('')
+  const [classLevelScope, setClassLevelScope] = useState('')
+  const [classGoal, setClassGoal] = useState('')
 
   function reset() {
     setStep(1)
@@ -160,6 +162,8 @@ function AddStudentModal({
     setClassSubjectId('')
     setClassTutorId('')
     setClassFee('')
+    setClassLevelScope('')
+    setClassGoal('')
   }
 
   function handleClose() {
@@ -227,12 +231,8 @@ function AddStudentModal({
             </FormField>
             <FormField label="Poziom" required>
               <SelectInput value={level} onChange={(e) => setLevel(e.target.value as Enums<'student_level'>)}>
-                <option value="SP">SP — Szkoła Podstawowa</option>
-                <option value="E8">E8 — Egzamin 8-klasisty</option>
-                <option value="SR">ŚR — Szkoła Średnia</option>
-                <option value="SR_EXT">ŚR★ — Średnia rozszerzenie</option>
-                <option value="EM">EM — Matura</option>
-                <option value="EM_EXT">EM★ — Matura rozszerzenie</option>
+                <option value="SP">Szkoła podstawowa</option>
+                <option value="SR">Szkoła średnia</option>
               </SelectInput>
             </FormField>
           </div>
@@ -350,8 +350,25 @@ function AddStudentModal({
               <FormField label="Opłata miesięczna (zł)" required>
                 <TextInput type="number" value={classFee} onChange={(e) => setClassFee(e.target.value)} placeholder="np. 360" />
               </FormField>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Poziom">
+                  <SelectInput value={classLevelScope} onChange={(e) => setClassLevelScope(e.target.value)}>
+                    <option value="">— nie dotyczy —</option>
+                    <option value="basic">Podstawa</option>
+                    <option value="extended">Rozszerzenie</option>
+                  </SelectInput>
+                </FormField>
+                <FormField label="Cel">
+                  <SelectInput value={classGoal} onChange={(e) => setClassGoal(e.target.value)}>
+                    <option value="">— nie dotyczy —</option>
+                    <option value="e8">Egzamin ósmoklasisty</option>
+                    <option value="matura">Matura</option>
+                    <option value="support">Bieżące wsparcie</option>
+                  </SelectInput>
+                </FormField>
+              </div>
               <p className="mt-1 text-[10px] italic text-dim">
-                {'Harmonogram tygodniowy dodaj po utworzeniu ucznia w ekranie „Dodaj zajęcia".'}
+                {'Poziom i cel są opcjonalne. Harmonogram tygodniowy dodaj po utworzeniu ucznia w ekranie „Dodaj zajęcia".'}
               </p>
             </div>
           )}
@@ -525,6 +542,9 @@ function AddClassesModal({
   const [roomId, setRoomId] = useState('')
   const [monthlyFee, setMonthlyFee] = useState('')
   const [form, setForm] = useState<Enums<'class_form'>>('individual')
+  // Opcjonalne — poziom (podstawa/rozszerzenie) i cel egzaminacyjny zajęć.
+  const [levelScope, setLevelScope] = useState<'' | Enums<'class_level_scope'>>('')
+  const [goal, setGoal] = useState<'' | Enums<'class_goal'>>('')
 
   function reset() {
     setStudentId('')
@@ -533,6 +553,8 @@ function AddClassesModal({
     setRoomId('')
     setMonthlyFee('')
     setForm('individual')
+    setLevelScope('')
+    setGoal('')
     setError(null)
   }
 
@@ -560,6 +582,8 @@ function AddClassesModal({
         subject_id: subjectId,
         tutor_id: tutorId,
         level: levelToEnum(student.level),
+        level_scope: levelScope || null,
+        goal: goal || null,
         student_id: studentId,
         monthly_fee: Number(monthlyFee),
         room_id: roomId || null,
@@ -627,8 +651,25 @@ function AddClassesModal({
           <TextInput type="number" value={monthlyFee} onChange={(e) => setMonthlyFee(e.target.value)} placeholder="np. 360" />
         </FormField>
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <FormField label="Poziom">
+          <SelectInput value={levelScope} onChange={(e) => setLevelScope(e.target.value as '' | Enums<'class_level_scope'>)}>
+            <option value="">— nie dotyczy —</option>
+            <option value="basic">Podstawa</option>
+            <option value="extended">Rozszerzenie</option>
+          </SelectInput>
+        </FormField>
+        <FormField label="Cel">
+          <SelectInput value={goal} onChange={(e) => setGoal(e.target.value as '' | Enums<'class_goal'>)}>
+            <option value="">— nie dotyczy —</option>
+            <option value="e8">Egzamin ósmoklasisty</option>
+            <option value="matura">Matura</option>
+            <option value="support">Bieżące wsparcie</option>
+          </SelectInput>
+        </FormField>
+      </div>
       <p className="text-[10px] italic text-dim">
-        Harmonogram tygodniowy (dni + godziny) edytuj po utworzeniu klasy w karcie ucznia.
+        Poziom i cel są opcjonalne. Harmonogram tygodniowy (dni + godziny) edytuj po utworzeniu klasy w karcie ucznia.
       </p>
 
       {error && (

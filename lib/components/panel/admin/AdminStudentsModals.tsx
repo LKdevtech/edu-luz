@@ -58,6 +58,8 @@ export function StudentsAddStudentModal({
   const [classSubjectId, setClassSubjectId] = useState('')
   const [classTutorId, setClassTutorId] = useState('')
   const [classFee, setClassFee] = useState('')
+  const [classLevelScope, setClassLevelScope] = useState('')
+  const [classGoal, setClassGoal] = useState('')
 
   function reset() {
     setStep(1)
@@ -76,6 +78,8 @@ export function StudentsAddStudentModal({
     setClassSubjectId('')
     setClassTutorId('')
     setClassFee('')
+    setClassLevelScope('')
+    setClassGoal('')
   }
 
   function handleClose() {
@@ -134,12 +138,8 @@ export function StudentsAddStudentModal({
             </FormField>
             <FormField label="Poziom" required>
               <SelectInput value={level} onChange={(e) => setLevel(e.target.value as Enums<'student_level'>)}>
-                <option value="SP">SP — Szkoła Podstawowa</option>
-                <option value="E8">E8 — Egzamin 8-klasisty</option>
-                <option value="SR">ŚR — Szkoła Średnia</option>
-                <option value="SR_EXT">ŚR★ — Średnia rozszerzenie</option>
-                <option value="EM">EM — Matura</option>
-                <option value="EM_EXT">EM★ — Matura rozszerzenie</option>
+                <option value="SP">Szkoła podstawowa</option>
+                <option value="SR">Szkoła średnia</option>
               </SelectInput>
             </FormField>
           </div>
@@ -230,6 +230,24 @@ export function StudentsAddStudentModal({
               <FormField label="Opłata miesięczna (zł)" required>
                 <TextInput type="number" value={classFee} onChange={(e) => setClassFee(e.target.value)} placeholder="np. 360" />
               </FormField>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Poziom">
+                  <SelectInput value={classLevelScope} onChange={(e) => setClassLevelScope(e.target.value)}>
+                    <option value="">— nie dotyczy —</option>
+                    <option value="basic">Podstawa</option>
+                    <option value="extended">Rozszerzenie</option>
+                  </SelectInput>
+                </FormField>
+                <FormField label="Cel">
+                  <SelectInput value={classGoal} onChange={(e) => setClassGoal(e.target.value)}>
+                    <option value="">— nie dotyczy —</option>
+                    <option value="e8">Egzamin ósmoklasisty</option>
+                    <option value="matura">Matura</option>
+                    <option value="support">Bieżące wsparcie</option>
+                  </SelectInput>
+                </FormField>
+              </div>
+              <p className="mt-1 text-[10px] italic text-dim">Poziom i cel są opcjonalne.</p>
             </div>
           )}
         </div>
