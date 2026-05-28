@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 
 import {
   FormField,
@@ -401,6 +401,101 @@ function AddStudentModal({
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// Combobox ucznia — wyszukiwarka zamiast <select> (użyteczna przy 100+ uczniach)
+// ════════════════════════════════════════════════════════════════════════════
+
+function StudentCombobox({
+  students,
+  value,
+  onChange,
+}: {
+  students: StudentOpt[]
+  value: string
+  onChange: (id: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  const selected = students.find((s) => s.id === value)
+
+  // Zamknij listę przy kliknięciu poza komponentem.
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  const q = query.trim().toLowerCase()
+  const matches = q
+    ? students
+        .filter(
+          (s) =>
+            s.fullName.toLowerCase().includes(q) ||
+            s.schoolClass.toLowerCase().includes(q),
+        )
+        .slice(0, 20)
+    : students.slice(0, 20)
+
+  // Tekst w polu: gdy lista zamknięta i wybrano ucznia — pokaż jego imię.
+  const inputValue = open ? query : selected ? selected.fullName : ''
+
+  function select(s: StudentOpt) {
+    onChange(s.id)
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <TextInput
+        value={inputValue}
+        placeholder="🔍 Wpisz imię, nazwisko lub klasę…"
+        onChange={(e) => {
+          setQuery(e.target.value)
+          if (!open) setOpen(true)
+          if (value) onChange('')
+        }}
+        onFocus={() => setOpen(true)}
+      />
+      {open && (
+        <div
+          className="absolute left-0 right-0 top-full z-10 mt-1 max-h-[240px] overflow-auto rounded-[10px] bg-surface"
+          style={{ border: '1px solid rgba(59,143,240,0.30)', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}
+        >
+          {matches.length > 0 ? (
+            matches.map((s) => (
+              <button
+                type="button"
+                key={s.id}
+                onClick={() => select(s)}
+                className="flex w-full items-center justify-between border-b border-subtle px-3 py-2 text-left hover:bg-surface-hover"
+                style={s.id === value ? { backgroundColor: 'rgba(59,143,240,0.12)' } : undefined}
+              >
+                <div>
+                  <div className="text-[13px] font-bold text-primary">{s.fullName}</div>
+                  <div className="text-[11px] text-dim">
+                    {s.schoolClass} · {s.level}
+                  </div>
+                </div>
+                {s.id === value && <span className="text-[12px] font-extrabold text-link">✓</span>}
+              </button>
+            ))
+          ) : (
+            <div className="px-3 py-2 text-[12px] text-dim">Brak wyników</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // 2. Dodaj zajęcia (dla istniejącego ucznia)
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -483,14 +578,11 @@ function AddClassesModal({
   return (
     <Modal open={open} onClose={handleClose} title="Dodaj zajęcia" icon="📚">
       <FormField label="Uczeń" required>
-        <SelectInput value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-          <option value="">— wybierz —</option>
-          {students.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.fullName} ({s.schoolClass}, {s.level})
-            </option>
-          ))}
-        </SelectInput>
+        <StudentCombobox
+          students={students}
+          value={studentId}
+          onChange={setStudentId}
+        />
       </FormField>
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Przedmiot" required>

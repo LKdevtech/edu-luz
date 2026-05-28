@@ -373,7 +373,13 @@ async function loadLessonsForStudent(
   supabase: Supabase,
   studentId: string,
   classIds: string[],
-  options: { from?: string; to?: string; limit?: number; order?: 'asc' | 'desc' } = {},
+  options: {
+    from?: string
+    to?: string
+    limit?: number
+    order?: 'asc' | 'desc'
+    statuses?: Enums<'lesson_status'>[]
+  } = {},
 ): Promise<LessonRow[]> {
   if (classIds.length === 0) return []
 
@@ -406,6 +412,9 @@ async function loadLessonsForStudent(
 
   if (options.from) query = query.gte('lesson_date', options.from)
   if (options.to) query = query.lte('lesson_date', options.to)
+  if (options.statuses && options.statuses.length > 0) {
+    query = query.in('status', options.statuses)
+  }
 
   query = query
     .order('lesson_date', { ascending: options.order !== 'desc' })
@@ -933,7 +942,13 @@ export async function getStudentClasses(
   const [schedule, exceptions, history, makeup, pendingCancels] = await Promise.all([
     loadWeeklySchedule(supabase, classIds),
     loadScheduleExceptions(supabase, classIds),
-    loadLessonsForStudent(supabase, studentId, classIds, { limit: 50, order: 'desc' }),
+    loadLessonsForStudent(supabase, studentId, classIds, {
+      limit: 50,
+      order: 'desc',
+      // Tab „Historia" pokazuje WYŁĄCZNIE zrealizowane lekcje. Zaplanowane,
+      // odwołane i no_show są w innych widokach (harmonogram / odrabianie).
+      statuses: ['completed', 'completed_no_entry'],
+    }),
     loadMakeupForStudent(supabase, classIds),
     loadPendingCancelLessonIds(supabase, studentId),
   ])

@@ -119,12 +119,20 @@ export type TutorStudentRow = {
   form: Enums<'class_form'>
   scheduleLabel: string
   parentLabel: string | null
+  /** Profile.id rodzica — używane przez „Napisz do rodzica" (null dla grup). */
+  parentId: string | null
   nextLessonLabel: string | null
   classId: string
   stats: {
-    totalLessons: number
-    attended: number | null
+    /** Lekcje zrealizowane (status completed lub completed_no_entry) — przeszłe. */
+    completedCount: number
+    /** Wszystkie lekcje od początku umowy (planned + completed + cancelled + ...). */
+    totalScheduled: number
+    /** Frekwencja: completed / (completed + no_show + cancelled<24h) — tylko przeszłe. */
+    attendancePercent: number
+    /** Wszystkie odwołane (cancelled) — do badge'a. */
     cancelled: number
+    /** Średnia liczba lekcji na miesiąc od startu umowy. */
     avgPerMonth: number
   }
   lastTopic: string | null
@@ -155,6 +163,10 @@ export type TutorAbsenceRow = {
   type: Enums<'tutor_absence_type'>
   startDate: string
   endDate: string
+  /** Godziny niedostępności (null = cały dzień). */
+  startTime: string | null
+  endTime: string | null
+  isUrgent: boolean
   reason: string | null
   approvedAt: string | null
   affectedLessonsCount: number | null
@@ -336,11 +348,12 @@ function mapLesson(r: LessonQueryRow): TutorLessonRow {
   }
 
   // entryStatus dla UI:
-  // - lekcja zaplanowana → null
-  // - no_show → 'no_entry' (blocked)
-  // - completed bez wpisu → 'missing'
-  // - completed bez wpisu po 48h → 'locked' (effektywnie zablokowane)
-  // - completed z wpisem → entry.status
+  // - lekcja zaplanowana / w trakcie / odwołana / makeup → null (wpis nie dotyczy)
+  // - no_show → 'no_entry' (lekcja się nie odbyła — wpis NIEMOŻLIWY)
+  // - completed / completed_no_entry z wpisem → entry.status
+  // - completed / completed_no_entry bez wpisu → ZAWSZE 'missing' (uzupełnialne,
+  //   nawet po 48h; po terminie wpis jest "spóźniony" — naliczany punkt karny —
+  //   ale NIGDY zablokowany, bo zrealizowana lekcja zawsze wymaga wpisu)
   let entryStatus: TutorLessonRow['entryStatus'] = null
   if (r.status === 'planned' || r.status === 'in_progress' || r.status === 'cancelled' || r.status === 'makeup') {
     entryStatus = null
@@ -348,8 +361,6 @@ function mapLesson(r: LessonQueryRow): TutorLessonRow {
     entryStatus = 'no_entry'
   } else if (r.entry) {
     entryStatus = r.entry.status
-  } else if (hoursLeft !== null && hoursLeft <= 0) {
-    entryStatus = 'no_entry'
   } else {
     entryStatus = 'missing'
   }
@@ -632,6 +643,7 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
           school_class,
           profile:profiles!students_profile_id_fkey ( first_name, last_name ),
           parent:parents!students_parent_id_fkey (
+            profile_id,
             profile:profiles!parents_profile_id_fkey ( first_name, last_name )
           )
         ),
@@ -677,6 +689,7 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
       school_class: string
       profile: { first_name: string; last_name: string }
       parent: {
+        profile_id: string
         profile: { first_name: string; last_name: string }
       } | null
     } | null
@@ -691,6 +704,7 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
           school_class: string
           profile: { first_name: string; last_name: string }
           parent: {
+            profile_id: string
             profile: { first_name: string; last_name: string }
           } | null
         }
@@ -704,7 +718,7 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
   // Wszystkie lekcje tutora (do statystyk per klasa)
   const allLessons = await supabase
     .from('lessons')
-    .select('class_id, status, lesson_date, entry:entries!entries_lesson_id_fkey ( topic, note_for_student, internal_note, homework:homework!homework_entry_id_fkey ( content ) )')
+    .select('class_id, status, lesson_date, cancelled_more_than_24h, entry:entries!entries_lesson_id_fkey ( topic, note_for_student, internal_note, homework:homework!homework_entry_id_fkey ( content ) )')
     .eq('tutor_id', tutorId)
     .order('lesson_date', { ascending: false })
   if (allLessons.error) throw allLessons.error
@@ -713,6 +727,7 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
     class_id: string
     status: Enums<'lesson_status'>
     lesson_date: string
+    cancelled_more_than_24h: boolean | null
     entry: {
       topic: string | null
       note_for_student: string | null
@@ -722,23 +737,36 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
   }
   const lessons = (allLessons.data ?? []) as unknown as LStatRow[]
 
+  const todayIso = new Date().toISOString().slice(0, 10)
+
   const result: TutorStudentRow[] = []
 
   for (const c of rows) {
     const isGroup = c.form === 'group'
     const classLessons = lessons.filter((l) => l.class_id === c.id)
-    const total = classLessons.length
+    const pastLessons = classLessons.filter((l) => l.lesson_date <= todayIso)
+    const totalScheduled = classLessons.length
     const cancelled = classLessons.filter((l) => l.status === 'cancelled').length
-    const completed = classLessons.filter(
+    const completedCount = pastLessons.filter(
       (l) => l.status === 'completed' || l.status === 'completed_no_entry',
     ).length
+
+    // Frekwencja: tylko z przeszłych lekcji.
+    //   denominator = completed + no_show + cancelled<24h
+    //   (cancelled_more_than_24h=false oznacza odwołanie późne — wlicza się jak strata)
+    const noShowPast = pastLessons.filter((l) => l.status === 'no_show').length
+    const cancelledLate = pastLessons.filter(
+      (l) => l.status === 'cancelled' && l.cancelled_more_than_24h === false,
+    ).length
+    const denom = completedCount + noShowPast + cancelledLate
+    const attendancePercent = denom > 0 ? Math.round((completedCount / denom) * 100) : 100
 
     // Średnio per miesiąc — rough estimate: total / liczba miesięcy od start_date
     const monthsAgo = Math.max(
       1,
       Math.round((Date.now() - new Date(c.start_date).getTime()) / (30 * 86_400_000)),
     )
-    const avgPerMonth = Math.round(total / monthsAgo)
+    const avgPerMonth = Math.round(totalScheduled / monthsAgo)
 
     // Last lesson info
     const lastLesson = classLessons.find((l) => l.entry)
@@ -768,11 +796,13 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
         form: c.form,
         scheduleLabel,
         parentLabel: null,
+        parentId: null,
         nextLessonLabel: null,
         classId: c.id,
         stats: {
-          totalLessons: total,
-          attended: null,
+          completedCount,
+          totalScheduled,
+          attendancePercent,
           cancelled,
           avgPerMonth,
         },
@@ -811,11 +841,13 @@ async function loadStudentsForTutor(supabase: Supabase, tutorId: string): Promis
         form: c.form,
         scheduleLabel,
         parentLabel,
+        parentId: c.student.parent?.profile_id ?? null,
         nextLessonLabel: null,
         classId: c.id,
         stats: {
-          totalLessons: total,
-          attended: completed,
+          completedCount,
+          totalScheduled,
+          attendancePercent,
           cancelled,
           avgPerMonth,
         },
@@ -879,13 +911,13 @@ export async function getTutorDashboard(
       .maybeSingle(),
   ])
 
-  // Brakujące wpisy: lekcje completed bez wpisu, posortowane po hoursLeft rosnąco.
+  // Brakujące wpisy: każda zrealizowana lekcja bez wpisu (także spóźniona >48h),
+  // posortowane po hoursLeft rosnąco (najbardziej spóźnione = najbardziej ujemne → na górze).
   const missingEntries = missingRaw
     .filter(
       (l) =>
         (l.status === 'completed' || l.status === 'completed_no_entry') &&
-        (l.entryStatus === 'missing' || l.entryStatus === 'no_entry') &&
-        l.hoursLeftForEntry !== null,
+        l.entryStatus === 'missing',
     )
     .sort((a, b) => (a.hoursLeftForEntry ?? 0) - (b.hoursLeftForEntry ?? 0))
 
@@ -1060,8 +1092,12 @@ export type TutorLessonsData = {
     entry: {
       topic: string | null
       hasHomework: boolean
+      /** ISO timestamp ostatniej edycji jeśli wpis został zmodyfikowany po publikacji. */
+      editedAt: string | null
     }
   }>
+  /** Liczba punktów karnych korepetytora (suma rekordów). */
+  penaltyPoints: number
 }
 
 export async function getTutorLessons(
@@ -1071,20 +1107,21 @@ export async function getTutorLessons(
   const tutor = await loadTutorSummary(supabase, tutorId)
   const today = new Date().toISOString().slice(0, 10)
   const monthAgo = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)
+  // Szersze okno dla brakujących wpisów — zrealizowana lekcja ZAWSZE wymaga wpisu,
+  // więc spóźnione (>48h) też muszą się tu pojawić, nie tylko te w terminie.
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10)
 
-  // Missing entries
+  // Missing entries — wszystkie zrealizowane lekcje bez wpisu (także spóźnione).
   const missing = await loadLessonsForTutor(supabase, tutorId, {
-    from: monthAgo,
+    from: ninetyDaysAgo,
     to: today,
     order: 'desc',
   })
-  const missingEntries = missing
-    .filter(
-      (l) =>
-        (l.status === 'completed' || l.status === 'completed_no_entry') &&
-        (l.entryStatus === 'missing' || l.entryStatus === 'no_entry'),
-    )
-    .filter((l) => l.hoursLeftForEntry !== null && l.hoursLeftForEntry > 0)
+  const missingEntries = missing.filter(
+    (l) =>
+      (l.status === 'completed' || l.status === 'completed_no_entry') &&
+      l.entryStatus === 'missing',
+  )
 
   // Recent entries: lekcje z opublikowanym/draft/locked wpisem
   // Pobieramy lekcje + entry.topic + homework count w jednym strzale.
@@ -1119,7 +1156,7 @@ export async function getTutorLessons(
         subject:subjects!lessons_subject_id_fkey ( name, color ),
         room:rooms!lessons_room_id_fkey ( name ),
         entry:entries!entries_lesson_id_fkey (
-          id, status, topic,
+          id, status, topic, published_at, updated_at,
           homework:homework!homework_entry_id_fkey ( id )
         )
       `,
@@ -1136,6 +1173,8 @@ export async function getTutorLessons(
       id: string
       status: Enums<'entry_status'>
       topic: string | null
+      published_at: string | null
+      updated_at: string | null
       homework: { id: string } | null
     } | null
   }
@@ -1148,10 +1187,80 @@ export async function getTutorLessons(
       entry: {
         topic: r.entry?.topic ?? null,
         hasHomework: Boolean(r.entry?.homework),
+        editedAt: computeEditedAt(r.entry?.published_at, r.entry?.updated_at),
       },
     }))
 
-  return { tutor, missingEntries, recentEntries }
+  // Liczba punktów karnych Tomasza.
+  const penaltyRes = await supabase
+    .from('tutor_penalty_points')
+    .select('id', { count: 'exact', head: true })
+    .eq('tutor_id', tutorId)
+  const penaltyPoints = penaltyRes.count ?? 0
+
+  return { tutor, missingEntries, recentEntries, penaltyPoints }
+}
+
+/**
+ * Wpis traktowany jako edytowany gdy updated_at jest > 60s po published_at.
+ * (Trigger entries_updated_at aktualizuje updated_at przy każdym update — w tym
+ * przy samym ustawieniu published_at, więc trzymamy mały zapas tolerancji.)
+ */
+function computeEditedAt(
+  publishedAt: string | null | undefined,
+  updatedAt: string | null | undefined,
+): string | null {
+  if (!publishedAt || !updatedAt) return null
+  const pub = new Date(publishedAt).getTime()
+  const upd = new Date(updatedAt).getTime()
+  if (upd - pub < 60_000) return null
+  return updatedAt
+}
+
+/**
+ * Idempotentnie wstaw punkty karne za lekcje bez wpisu starsze niż 48h.
+ * Wywoływane przy renderze panelu korepetytora (najczęściej Lekcje i wpisy).
+ * Unique index na `tutor_penalty_points.lesson_id` chroni przed duplikatami.
+ */
+export async function awardOverdueEntryPenalties(
+  supabase: Supabase,
+  tutorId: string,
+): Promise<number> {
+  const { data: candidates, error } = await supabase
+    .from('lessons')
+    .select('id, lesson_date, end_time')
+    .eq('tutor_id', tutorId)
+    .eq('status', 'completed_no_entry')
+  if (error) throw error
+  if (!candidates || candidates.length === 0) return 0
+
+  const now = Date.now()
+  const qualifying = candidates.filter((l) => {
+    const lessonEnd = new Date(`${l.lesson_date}T${l.end_time}`)
+    return lessonEnd.getTime() + 48 * 3600 * 1000 < now
+  })
+  if (qualifying.length === 0) return 0
+
+  const lessonIds = qualifying.map((l) => l.id)
+  const { data: existing, error: exErr } = await supabase
+    .from('tutor_penalty_points')
+    .select('lesson_id')
+    .in('lesson_id', lessonIds)
+  if (exErr) throw exErr
+  const existingSet = new Set((existing ?? []).map((e) => e.lesson_id))
+
+  const toInsert = qualifying.filter((l) => !existingSet.has(l.id))
+  if (toInsert.length === 0) return 0
+
+  const { error: insErr } = await supabase.from('tutor_penalty_points').insert(
+    toInsert.map((l) => ({
+      tutor_id: tutorId,
+      lesson_id: l.id,
+      reason: 'Brak wpisu po 48h od lekcji.',
+    })),
+  )
+  if (insErr) throw insErr
+  return toInsert.length
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1200,22 +1309,51 @@ export type AvailabilityBlock = {
   id: string
 }
 
+export type WeeklyLessonSlot = {
+  dayOfWeek: number
+  startHour: number // godzina jako ułamek (np. 14.25 = 14:15)
+  endHour: number
+  startTime: string // 'HH:MM'
+  endTime: string
+  studentLabel: string // imię ucznia lub nazwa grupy
+  isGroup: boolean
+}
+
+export type ChangeRequestRow = {
+  id: string
+  description: string
+  sentAt: string
+  /** Czy admin odpowiedział (dowolna wiadomość zwrotna oznacza obsłużone). */
+  hasReply: boolean
+}
+
 export type TutorAvailabilityData = {
   tutor: TutorSummary
   baseline: AvailabilityBlock[]
   totalWeeklyHours: number
   extraSlots: ExtraSlotRow[]
   absences: TutorAbsenceRow[]
+  /** Stały plan lekcji do grid view — z weekly_slots aktywnych klas. */
+  weeklyLessons: WeeklyLessonSlot[]
+  /** Profile.id admina — odbiorca prośby o zmianę planu. */
+  adminId: string
+  /** Prośby o zmianę planu wysłane przez korepetytora (oczekujące = bez odp.). */
+  changeRequests: ChangeRequestRow[]
 }
+
+const CHANGE_REQUEST_SUBJECT = 'Prośba o zmianę planu'
 
 export async function getTutorAvailability(
   supabase: Supabase,
   tutorId: string,
 ): Promise<TutorAvailabilityData> {
   const today = new Date().toISOString().slice(0, 10)
-  const tutor = await loadTutorSummary(supabase, tutorId)
+  const [tutor, tutorClassIds] = await Promise.all([
+    loadTutorSummary(supabase, tutorId),
+    loadTutorClassIds(supabase, tutorId),
+  ])
 
-  const [blocks, extras, absences] = await Promise.all([
+  const [blocks, extras, absences, weeklyLessonsRes, adminRes, changeReqRes] = await Promise.all([
     supabase
       .from('availability_blocks')
       .select('id, day_of_week, start_time, end_time')
@@ -1235,14 +1373,51 @@ export async function getTutorAvailability(
       .order('slot_date'),
     supabase
       .from('tutor_absences')
-      .select('id, absence_type, start_date, end_date, reason, approved_at, affected_lessons_count')
+      .select('id, absence_type, start_date, end_date, start_time, end_time, is_urgent, reason, approved_at, affected_lessons_count')
       .eq('tutor_id', tutorId)
       .gte('end_date', today)
       .order('start_date'),
+    tutorClassIds.length > 0
+      ? supabase
+          .from('weekly_slots')
+          .select(
+            `
+              day_of_week, start_time, end_time,
+              class:classes!weekly_slots_class_id_fkey (
+                form,
+                student:students!classes_student_id_fkey (
+                  profile:profiles!students_profile_id_fkey ( first_name, last_name )
+                ),
+                group:groups!classes_group_id_fkey ( name )
+              )
+            `,
+          )
+          .in('class_id', tutorClassIds)
+          .is('active_to', null)
+          .order('day_of_week')
+          .order('start_time')
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single(),
+    supabase
+      .from('direct_messages')
+      .select('id, body, sent_at, subject')
+      .eq('sender_id', tutorId)
+      .eq('subject', CHANGE_REQUEST_SUBJECT)
+      .order('sent_at', { ascending: false })
+      .limit(10),
   ])
   if (blocks.error) throw blocks.error
   if (extras.error) throw extras.error
   if (absences.error) throw absences.error
+  if (weeklyLessonsRes.error) throw weeklyLessonsRes.error
+  if (adminRes.error) throw adminRes.error
+  if (changeReqRes.error) throw changeReqRes.error
 
   const baseline: AvailabilityBlock[] = (blocks.data ?? []).map((b) => ({
     id: b.id,
@@ -1282,10 +1457,56 @@ export async function getTutorAvailability(
     type: a.absence_type,
     startDate: a.start_date,
     endDate: a.end_date,
+    startTime: a.start_time ? a.start_time.slice(0, 5) : null,
+    endTime: a.end_time ? a.end_time.slice(0, 5) : null,
+    isUrgent: a.is_urgent,
     reason: a.reason,
     approvedAt: a.approved_at,
     affectedLessonsCount: a.affected_lessons_count,
   }))
+
+  type WSRow = {
+    day_of_week: number
+    start_time: string
+    end_time: string
+    class: {
+      form: Enums<'class_form'>
+      student: { profile: { first_name: string; last_name: string } } | null
+      group: { name: string } | null
+    }
+  }
+  const wsRows = (weeklyLessonsRes.data ?? []) as unknown as WSRow[]
+  const weeklyLessons: WeeklyLessonSlot[] = wsRows.map((s) => {
+    const [sh, sm] = s.start_time.split(':').map(Number)
+    const [eh, em] = s.end_time.split(':').map(Number)
+    const isGroup = s.class.form === 'group'
+    const label = isGroup
+      ? s.class.group?.name ?? 'Grupa'
+      : s.class.student
+        ? `${s.class.student.profile.first_name} ${s.class.student.profile.last_name.charAt(0)}.`
+        : '?'
+    return {
+      dayOfWeek: s.day_of_week,
+      startHour: (sh ?? 0) + (sm ?? 0) / 60,
+      endHour: (eh ?? 0) + (em ?? 0) / 60,
+      startTime: s.start_time.slice(0, 5),
+      endTime: s.end_time.slice(0, 5),
+      studentLabel: label,
+      isGroup,
+    }
+  })
+
+  // Prośby o zmianę: oznaczamy jako pending wszystkie wysłane w ostatnich 30 dni
+  // (admin nie ma jeszcze UI do odpowiedzi — hasReply heurystycznie false).
+  const thirtyDaysAgo = Date.now() - 30 * 86_400_000
+  const changeRequests: ChangeRequestRow[] = (changeReqRes.data ?? [])
+    .filter((m) => new Date(m.sent_at).getTime() >= thirtyDaysAgo)
+    .map((m) => ({
+      id: m.id,
+      description: m.body,
+      sentAt: m.sent_at,
+      hasReply: false,
+    }))
 
   return {
     tutor,
@@ -1293,6 +1514,9 @@ export async function getTutorAvailability(
     totalWeeklyHours: Math.round(totalWeeklyHours * 10) / 10,
     extraSlots,
     absences: absenceRows,
+    weeklyLessons,
+    adminId: adminRes.data.id,
+    changeRequests,
   }
 }
 

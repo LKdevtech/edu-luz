@@ -2,7 +2,6 @@ import Link from 'next/link'
 
 import { getCurrentStudentId } from '@/lib/auth/getCurrentStudentId'
 import { LevelBadge, StatusIcon, SubjectDot, getLessonStatusMeta } from '@/lib/components/panel/Badges'
-import { CancelLessonOverlay } from '@/lib/components/panel/CancelLessonOverlay'
 import { EntryCard } from '@/lib/components/panel/EntryCard'
 import {
   getStudentClasses,
@@ -74,13 +73,7 @@ export default async function StudentClassesPage({
       {activeTab === 'schedule' && (
         <ScheduleTab schedule={data.schedule} exceptions={data.exceptions} />
       )}
-      {activeTab === 'history' && (
-        <HistoryTab
-          history={data.history}
-          studentId={studentId}
-          pendingCancelLessonIds={data.pendingCancelLessonIds}
-        />
-      )}
+      {activeTab === 'history' && <HistoryTab history={data.history} />}
       {activeTab === 'makeup' && (
         <MakeupTab pending={data.makeupPending} completed={data.makeupCompleted} />
       )}
@@ -218,53 +211,31 @@ function ExceptionCard({ exception }: { exception: ScheduleExceptionRow }) {
 // TAB 2 — Historia lekcji
 // ════════════════════════════════════════════════════════════════════════════
 
-function HistoryTab({
-  history,
-  studentId,
-  pendingCancelLessonIds,
-}: {
-  history: LessonRow[]
-  studentId: string
-  pendingCancelLessonIds: Set<string>
-}) {
+function HistoryTab({ history }: { history: LessonRow[] }) {
   if (history.length === 0) {
     return (
       <div className="rounded-card bg-surface p-5 text-center text-[12px] text-dim">
-        Brak lekcji w historii.
+        Brak zrealizowanych lekcji w historii.
       </div>
     )
   }
   return (
     <div className="flex flex-col gap-2">
       {history.map((l) => (
-        <HistoryLessonCard
-          key={l.id}
-          lesson={l}
-          studentId={studentId}
-          pendingCancel={pendingCancelLessonIds.has(l.id)}
-        />
+        <HistoryLessonCard key={l.id} lesson={l} />
       ))}
     </div>
   )
 }
 
-function HistoryLessonCard({
-  lesson,
-  studentId,
-  pendingCancel,
-}: {
-  lesson: LessonRow
-  studentId: string
-  pendingCancel: boolean
-}) {
-  const isDimmed = lesson.status === 'cancelled' || lesson.status === 'no_show'
+// Tab „Historia" pokazuje tylko `completed` i `completed_no_entry` (filtr
+// w `getStudentClasses`). Brak ścieżek dla planned / cancelled / no_show.
+function HistoryLessonCard({ lesson }: { lesson: LessonRow }) {
   const meta = getLessonStatusMeta(lesson.status)
 
   return (
     <article
-      className={`relative rounded-card bg-surface p-3 transition-all hover:-translate-y-0.5 ${
-        isDimmed ? 'opacity-70' : ''
-      }`}
+      className="relative rounded-card bg-surface p-3 transition-all hover:-translate-y-0.5"
       style={{ borderLeft: `3px solid ${lesson.subjectColor}` }}
     >
       <div className="flex items-center gap-3">
@@ -287,19 +258,7 @@ function HistoryLessonCard({
             <span>•</span>
             <span style={{ color: meta.color }}>{meta.label}</span>
           </div>
-          {lesson.cancelReason && (
-            <div className="mt-1 text-[11px]" style={{ color: meta.color }}>
-              Powód: {lesson.cancelReason}
-            </div>
-          )}
         </div>
-        {lesson.status === 'planned' && (
-          <CancelLessonOverlay
-            lessonId={lesson.id}
-            studentId={studentId}
-            pending={pendingCancel}
-          />
-        )}
       </div>
       {lesson.entry && (lesson.entry.topic || lesson.entry.noteForStudent || lesson.entry.homeworkContent) && (
         <div className="mt-3">

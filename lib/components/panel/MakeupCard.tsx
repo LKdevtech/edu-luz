@@ -35,7 +35,12 @@ export function MakeupCard({ item, parentId, variant = 'full' }: MakeupCardProps
     item.status === 'proposed' && item.proposal?.proposedBy === 'tutor'
   const isProposedByParent =
     item.status === 'proposed' && item.proposal?.proposedBy === 'parent'
-  const needsParentProposal = item.status === 'waiting_for_parent' && !item.proposal
+  // Rodzic może zaproponować termin gdy nie ma jeszcze propozycji — niezależnie
+  // od tego, czy makeup_request startuje z `waiting_for_tutor` (po odwołaniu) czy
+  // `waiting_for_parent` (po odrzuceniu przez tutora w kolejnej rundzie).
+  const needsParentProposal =
+    !item.proposal &&
+    (item.status === 'waiting_for_parent' || item.status === 'waiting_for_tutor')
   const compact = variant === 'compact'
 
   async function accept() {
@@ -230,8 +235,9 @@ export function MakeupCard({ item, parentId, variant = 'full' }: MakeupCardProps
         </div>
       )}
 
-      {/* Stan: brak propozycji — rodzic proponuje pierwszy */}
-      {needsParentProposal && !compact && mode === 'idle' && (
+      {/* Stan: brak propozycji — rodzic proponuje pierwszy.
+          Dostępne też w trybie compact (dashboard sidebar). */}
+      {needsParentProposal && mode === 'idle' && (
         <div
           className="mt-3 rounded-[10px] p-3"
           style={{ backgroundColor: '#F59E0B0A', borderLeft: '3px solid #F59E0B66' }}
@@ -249,8 +255,9 @@ export function MakeupCard({ item, parentId, variant = 'full' }: MakeupCardProps
         </div>
       )}
 
-      {/* Picker slotów (rodzic proponuje albo kontrpropozycja) */}
-      {mode === 'picker' && !compact && (
+      {/* Picker slotów (rodzic proponuje albo kontrpropozycja).
+          Dostępny też w trybie compact (dashboard sidebar). */}
+      {mode === 'picker' && (
         <div
           className="mt-3 rounded-[10px] p-3"
           style={{ backgroundColor: 'rgba(59,143,240,0.08)', borderLeft: '3px solid rgba(59,143,240,0.4)' }}

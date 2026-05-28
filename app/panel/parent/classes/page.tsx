@@ -1,7 +1,6 @@
 import Link from 'next/link'
 
 import { getCurrentParentId } from '@/lib/auth/getCurrentParentId'
-import { CancelOverlay } from '@/lib/components/panel/CancelOverlay'
 import { ChildSwitcher } from '@/lib/components/panel/ChildSwitcher'
 import { EntryCard } from '@/lib/components/panel/EntryCard'
 import { LevelBadge, StatusIcon, SubjectDot, getLessonStatusMeta } from '@/lib/components/panel/Badges'
@@ -96,11 +95,7 @@ export default async function ParentClassesPage({
         />
       )}
       {activeTab === 'history' && (
-        <HistoryTab
-          history={data.history}
-          parentId={parentId}
-          showChild={childFilter === 'all'}
-        />
+        <HistoryTab history={data.history} showChild={childFilter === 'all'} />
       )}
       {activeTab === 'makeup' && (
         <MakeupTab
@@ -279,11 +274,9 @@ function ExceptionCard({
 
 function HistoryTab({
   history,
-  parentId,
   showChild,
 }: {
   history: ParentLessonRow[]
-  parentId: string
   showChild: boolean
 }) {
   if (history.length === 0) {
@@ -296,33 +289,28 @@ function HistoryTab({
   return (
     <div className="flex flex-col gap-2">
       {history.map((l) => (
-        <HistoryLessonCard
-          key={`${l.id}:${l.childId}`}
-          lesson={l}
-          parentId={parentId}
-          showChild={showChild}
-        />
+        <HistoryLessonCard key={`${l.id}:${l.childId}`} lesson={l} showChild={showChild} />
       ))}
     </div>
   )
 }
 
+// Tab „Historia" pokazuje completed / completed_no_entry / cancelled — planned
+// i no_show są filtrowane w `getParentClasses`. Brak ścieżki dla CancelOverlay.
 function HistoryLessonCard({
   lesson,
-  parentId,
   showChild,
 }: {
   lesson: ParentLessonRow
-  parentId: string
   showChild: boolean
 }) {
-  const isDimmed = lesson.status === 'cancelled' || lesson.status === 'no_show'
+  const isCancelled = lesson.status === 'cancelled'
   const meta = getLessonStatusMeta(lesson.status)
 
   return (
     <article
       className={`relative rounded-card bg-surface p-3 transition-all hover:-translate-y-0.5 ${
-        isDimmed ? 'opacity-70' : ''
+        isCancelled ? 'opacity-70' : ''
       }`}
       style={{ borderLeft: `3px solid ${lesson.subjectColor}` }}
     >
@@ -363,13 +351,6 @@ function HistoryLessonCard({
             </div>
           )}
         </div>
-        {lesson.status === 'planned' && (
-          <CancelOverlay
-            lessonId={lesson.id}
-            parentId={parentId}
-            isWithin24h={lesson.isWithin24h}
-          />
-        )}
       </div>
       {lesson.entry && (lesson.entry.topic || lesson.entry.noteForStudent || lesson.entry.noteForParent || lesson.entry.homeworkContent) && (
         <div className="mt-3">

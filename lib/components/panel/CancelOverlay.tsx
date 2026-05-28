@@ -1,9 +1,16 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useId, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+
+import {
+  getActiveCancelOverlay,
+  setActiveCancelOverlay,
+  subscribeCancelOverlay,
+} from './cancelOverlayBus'
 
 type CancelOverlayProps = {
   lessonId: string
@@ -19,39 +26,31 @@ type CancelOverlayProps = {
  *   - >24h: lekcja odwołana + utworzony makeup_request (do odrobienia).
  *   - <24h: lekcja odwołana, przepada bez prawa do odrobienia.
  *
- * Migracja makeup_request po odwołaniu wykona się triggerem aplikacyjnym — tu
- * po prostu aktualizujemy lessons. Server Action wpadnie w kolejnej iteracji
- * (RPC supabase function albo logic po stronie route handler).
+ * Modal w portalu (z-9999) + singleton bus — patrz CancelLessonOverlay.
  */
 export function CancelOverlay({ lessonId, parentId, isWithin24h }: CancelOverlayProps) {
+  const overlayId = useId()
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-[7px] px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide transition-colors"
-        style={
-          isWithin24h
-            ? {
-                border: '1px solid #F59E0B40',
-                backgroundColor: '#F59E0B10',
-                color: '#F59E0B',
-              }
-            : {
-                border: '1px solid #EF444440',
-                backgroundColor: '#EF444410',
-                color: '#EF4444',
-              }
-        }
-      >
-        Odwołaj
-      </button>
-    )
+  useEffect(() => {
+    return subscribeCancelOverlay((id) => {
+      if (id !== overlayId) setOpen(false)
+    })
+  }, [overlayId])
+
+  function handleOpen() {
+    setActiveCancelOverlay(overlayId)
+    setOpen(true)
+  }
+
+  function handleClose() {
+    if (getActiveCancelOverlay() === overlayId) {
+      setActiveCancelOverlay(null)
+    }
+    setOpen(false)
   }
 
   function confirm() {
@@ -88,60 +87,97 @@ export function CancelOverlay({ lessonId, parentId, isWithin24h }: CancelOverlay
         }
       }
 
-      setOpen(false)
+      handleClose()
       router.refresh()
     })
   }
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-card bg-[rgba(21,24,39,0.94)] p-4 text-center backdrop-blur-sm">
-      {isWithin24h ? (
-        <>
-          <p className="text-[12px] font-extrabold" style={{ color: '#F59E0B' }}>
-            ⚠ Mniej niż 24h do lekcji
-          </p>
-          <p className="text-[11px] text-secondary">
-            Lekcja przepadnie bez możliwości odrobienia.
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-[12px] font-extrabold text-success">
-            Ponad 24h do lekcji — będzie można ją odrobić
-          </p>
-          <p className="text-[11px] text-secondary">
-            Korepetytor zaproponuje termin odrobienia.
-          </p>
-        </>
-      )}
-      {error && (
-        <p className="text-[11px] font-bold" style={{ color: '#EF4444' }}>
-          Błąd: {error}
-        </p>
-      )}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          disabled={isPending}
-          className="rounded-[8px] border border-subtle bg-surface px-3 py-1.5 text-[12px] font-bold text-secondary hover:bg-surface-hover disabled:opacity-50"
-        >
-          Anuluj
-        </button>
-        <button
-          type="button"
-          onClick={confirm}
-          disabled={isPending}
-          className="rounded-[8px] px-3 py-1.5 text-[12px] font-extrabold text-white hover:brightness-110 disabled:opacity-50"
-          style={{ backgroundColor: isWithin24h ? '#F59E0B' : '#EF4444' }}
-        >
-          {isPending
-            ? 'Wysyłanie…'
-            : isWithin24h
-              ? 'Odwołaj (przepadnie)'
-              : 'Tak, odwołaj'}
-        </button>
-      </div>
-    </div>
+    <>
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="rounded-[7px] px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide transition-colors"
+        style={
+          isWithin24h
+            ? {
+                border: '1px solid #F59E0B40',
+                backgroundColor: '#F59E0B10',
+                color: '#F59E0B',
+              }
+            : {
+                border: '1px solid #EF444440',
+                backgroundColor: '#EF444410',
+                color: '#EF4444',
+              }
+        }
+      >
+        Odwołaj
+      </button>
+      {open &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 flex items-center justify-center p-4"
+            style={{ zIndex: 9999, backgroundColor: 'rgba(21,24,39,0.7)', backdropFilter: 'blur(4px)' }}
+            onClick={handleClose}
+          >
+            <div
+              className="flex max-w-[360px] flex-col items-center gap-3 rounded-[14px] bg-surface p-5 text-center shadow-xl"
+              style={{ border: '1px solid rgba(59,143,240,0.20)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {isWithin24h ? (
+                <>
+                  <p className="text-[13px] font-extrabold" style={{ color: '#F59E0B' }}>
+                    ⚠ Mniej niż 24h do lekcji
+                  </p>
+                  <p className="text-[12px] text-secondary">
+                    Lekcja przepadnie bez możliwości odrobienia.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[13px] font-extrabold text-success">
+                    Ponad 24h do lekcji — będzie można ją odrobić
+                  </p>
+                  <p className="text-[12px] text-secondary">
+                    Korepetytor zaproponuje termin odrobienia.
+                  </p>
+                </>
+              )}
+              {error && (
+                <p className="text-[11px] font-bold" style={{ color: '#EF4444' }}>
+                  Błąd: {error}
+                </p>
+              )}
+              <div className="mt-1 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={isPending}
+                  className="rounded-[8px] border border-subtle bg-alt px-4 py-2 text-[12px] font-bold text-secondary hover:bg-surface-hover disabled:opacity-50"
+                >
+                  Anuluj
+                </button>
+                <button
+                  type="button"
+                  onClick={confirm}
+                  disabled={isPending}
+                  className="rounded-[8px] px-4 py-2 text-[12px] font-extrabold text-white hover:brightness-110 disabled:opacity-50"
+                  style={{ backgroundColor: isWithin24h ? '#F59E0B' : '#EF4444' }}
+                >
+                  {isPending
+                    ? 'Wysyłanie…'
+                    : isWithin24h
+                      ? 'Odwołaj (przepadnie)'
+                      : 'Tak, odwołaj'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   )
 }

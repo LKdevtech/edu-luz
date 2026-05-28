@@ -148,8 +148,14 @@ export function TutorWeekSchedule({ days, prevHints }: TutorWeekScheduleProps) {
                         textDecoration: isCancelled ? 'line-through' : 'none',
                       }}
                     >
+                      {lesson.status === 'makeup' ? '↻ ' : ''}
                       {lesson.studentLabel}
                     </div>
+                    {!tiny && lesson.status === 'makeup' && (
+                      <div className="truncate text-[8px] font-extrabold uppercase tracking-wide" style={{ color: meta.color }}>
+                        Odrabianie
+                      </div>
+                    )}
                     {!tiny && (
                       <div className="truncate text-[9px] text-secondary">{lesson.subjectName}</div>
                     )}

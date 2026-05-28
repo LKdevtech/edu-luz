@@ -1,54 +1,22 @@
 'use client'
 
-import { useTransition, useState } from 'react'
-
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-
 type HomeworkCheckboxProps = {
-  homeworkId: string
-  studentId: string
-  initialDone: boolean
+  done: boolean
+  onToggle: () => void
+  disabled?: boolean
 }
 
 /**
- * Checkbox PD — jedyna mutacja dostępna dla roli `student` (sekcja 9 widoczności).
- * Aktualizuje `homework_completions.is_done` przez upsert.
+ * Kontrolowany checkbox PD — sam nie trzyma stanu ani nie wykonuje mutacji.
+ * Stan i mutacja są właścicielstwem rodzica (HomeworkSection), żeby
+ * przepięcie karty między „Do zrobienia" a „Zrobione" działało w realtime.
  */
-export function HomeworkCheckbox({
-  homeworkId,
-  studentId,
-  initialDone,
-}: HomeworkCheckboxProps) {
-  const [done, setDone] = useState(initialDone)
-  const [isPending, startTransition] = useTransition()
-
-  function toggle() {
-    const next = !done
-    setDone(next) // optymistycznie
-    startTransition(async () => {
-      const supabase = createSupabaseBrowserClient()
-      const { error } = await supabase.from('homework_completions').upsert(
-        {
-          homework_id: homeworkId,
-          student_id: studentId,
-          is_done: next,
-          done_at: next ? new Date().toISOString() : null,
-        },
-        { onConflict: 'homework_id,student_id' },
-      )
-      if (error) {
-        // Rollback przy błędzie.
-        setDone(!next)
-        console.error('Homework toggle failed:', error)
-      }
-    })
-  }
-
+export function HomeworkCheckbox({ done, onToggle, disabled = false }: HomeworkCheckboxProps) {
   return (
     <button
       type="button"
-      onClick={toggle}
-      disabled={isPending}
+      onClick={onToggle}
+      disabled={disabled}
       aria-checked={done}
       role="checkbox"
       aria-label={done ? 'Oznacz jako niewykonane' : 'Oznacz jako wykonane'}

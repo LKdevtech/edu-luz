@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getCurrentParentId } from '@/lib/auth/getCurrentParentId'
 import { CancelOverlay } from '@/lib/components/panel/CancelOverlay'
 import { ChildSwitcher } from '@/lib/components/panel/ChildSwitcher'
+import { ContactCenter } from '@/lib/components/panel/ContactCenter'
 import { EntryCard } from '@/lib/components/panel/EntryCard'
 import { LevelBadge, SubjectDot } from '@/lib/components/panel/Badges'
 import { MakeupCard } from '@/lib/components/panel/MakeupCard'
@@ -180,12 +181,7 @@ export default async function ParentDashboardPage({
                 <span className="text-primary">{data.center.email}</span>
               </div>
             </div>
-            <button
-              type="button"
-              className="mt-3 w-full rounded-[8px] bg-[rgba(59,143,240,0.12)] px-3 py-2 text-[12px] font-extrabold text-link hover:bg-[rgba(59,143,240,0.2)]"
-            >
-              💬 Wyślij wiadomość
-            </button>
+            <ContactCenter parentId={parentId} adminId={data.center.adminId} />
           </aside>
         </div>
       </div>

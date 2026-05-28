@@ -1,5 +1,6 @@
 import { getCurrentTutorId } from '@/lib/auth/getCurrentTutorId'
 import { LevelBadge, SubjectDot } from '@/lib/components/panel/Badges'
+import { MessageParentButton } from '@/lib/components/panel/MessageParentButton'
 import { getTutorStudents, type TutorStudentRow } from '@/lib/queries/tutor'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -72,7 +73,7 @@ export default async function TutorStudentsPage({
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map((s) => (
-            <StudentCard key={s.id} s={s} />
+            <StudentCard key={s.id} s={s} tutorId={tutorId} />
           ))}
         </div>
       )}
@@ -80,11 +81,8 @@ export default async function TutorStudentsPage({
   )
 }
 
-function StudentCard({ s }: { s: TutorStudentRow }) {
-  const attendRate =
-    s.stats.attended !== null && s.stats.totalLessons > 0
-      ? Math.round((s.stats.attended / s.stats.totalLessons) * 100)
-      : null
+function StudentCard({ s, tutorId }: { s: TutorStudentRow; tutorId: string }) {
+  const attendRate = s.stats.attendancePercent
 
   return (
     <details className="rounded-card bg-surface" style={{ border: '1px solid rgba(59,143,240,0.10)' }}>
@@ -126,12 +124,12 @@ function StudentCard({ s }: { s: TutorStudentRow }) {
                 {s.stats.cancelled} odwołane
               </span>
             )}
-            {attendRate !== null && attendRate >= 95 && (
+            {attendRate >= 95 && (
               <span
                 className="rounded-md px-1.5 py-0.5 text-[10px] font-bold"
                 style={{ backgroundColor: '#22C55E22', color: '#22C55E' }}
               >
-                ✓ {attendRate}% obecności
+                ✓ {attendRate}% frekwencji
               </span>
             )}
           </div>
@@ -147,11 +145,15 @@ function StudentCard({ s }: { s: TutorStudentRow }) {
       >
         {/* Stats */}
         <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-          <StatTile value={s.stats.totalLessons} label="Lekcji łącznie" color="#3B8FF0" />
           <StatTile
-            value={attendRate !== null ? `${attendRate}%` : '—'}
-            label="Obecność"
-            color={attendRate !== null && attendRate >= 90 ? '#22C55E' : '#FFCA28'}
+            value={`${s.stats.completedCount} / ${s.stats.totalScheduled}`}
+            label="Zrealizowane / Zaplanowane"
+            color="#3B8FF0"
+          />
+          <StatTile
+            value={`${attendRate}%`}
+            label="Frekwencja"
+            color={attendRate >= 90 ? '#22C55E' : attendRate >= 75 ? '#FFCA28' : '#EF4444'}
           />
           <StatTile
             value={s.stats.cancelled}
@@ -222,7 +224,7 @@ function StudentCard({ s }: { s: TutorStudentRow }) {
 
         {/* Parent (solo only) */}
         {!s.isGroup && s.parentLabel && (
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-[10px] bg-alt p-3">
+          <div className="mt-3 flex items-start justify-between gap-3 rounded-[10px] bg-alt p-3">
             <div className="flex items-center gap-2">
               <span aria-hidden>👨‍👩‍👧</span>
               <div>
@@ -232,13 +234,14 @@ function StudentCard({ s }: { s: TutorStudentRow }) {
                 <div className="text-[13px] font-bold text-primary">{s.parentLabel}</div>
               </div>
             </div>
-            <button
-              type="button"
-              className="rounded-[10px] px-3 py-1.5 text-[11px] font-extrabold transition-colors hover:brightness-110"
-              style={{ backgroundColor: '#3B8FF026', color: '#3B8FF0' }}
-            >
-              Napisz do rodzica
-            </button>
+            {s.parentId && (
+              <MessageParentButton
+                tutorId={tutorId}
+                parentId={s.parentId}
+                parentName={s.parentLabel}
+                studentName={s.name}
+              />
+            )}
           </div>
         )}
       </div>

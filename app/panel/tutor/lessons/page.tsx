@@ -3,7 +3,11 @@ import Link from 'next/link'
 import { getCurrentTutorId } from '@/lib/auth/getCurrentTutorId'
 import { LevelBadge, SubjectDot } from '@/lib/components/panel/Badges'
 import { LessonEntryForm } from '@/lib/components/panel/LessonEntryForm'
-import { getTutorLessons, type TutorLessonRow } from '@/lib/queries/tutor'
+import {
+  awardOverdueEntryPenalties,
+  getTutorLessons,
+  type TutorLessonRow,
+} from '@/lib/queries/tutor'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Enums } from '@/lib/types/database.types'
 import { formatLessonDate } from '@/lib/utils/date'
@@ -19,9 +23,12 @@ const ENTRY_STATUS_META: Record<
   missing: { label: 'Brak wpisu', color: '#FF6F4A', bg: '#FF6F4A29' },
   draft: { label: 'Szkic', color: '#FFCA28', bg: '#FFCA2822' },
   published: { label: 'Opublikowany', color: '#22C55E', bg: '#22C55E22' },
-  locked: { label: 'Zablokowany (48h)', color: '#8B879D', bg: '#8B879D22' },
+  // 'locked' nie blokuje już edycji — zrealizowana lekcja zawsze wymaga wpisu.
+  // Oznacza po prostu wpis spóźniony (po 48h) z naliczonym punktem karnym.
+  locked: { label: 'Spóźniony', color: '#FF6F4A', bg: '#FF6F4A22' },
+  // 'no_entry' / 'blocked' = lekcja się NIE odbyła (no-show) → wpis niemożliwy.
   blocked: { label: 'No-show', color: '#EF4444', bg: '#EF444422' },
-  no_entry: { label: 'Brak (zablokowany)', color: '#EF4444', bg: '#EF444422' },
+  no_entry: { label: 'Brak — lekcja się nie odbyła', color: '#EF4444', bg: '#EF444422' },
 }
 
 export default async function TutorLessonsPage({
@@ -31,6 +38,9 @@ export default async function TutorLessonsPage({
 }) {
   const tutorId = await getCurrentTutorId()
   const supabase = createSupabaseServerClient()
+  // Najpierw przyznaj punkty karne za lekcje > 48h bez wpisu — potem dopiero
+  // czytamy stan, żeby wynik (penaltyPoints) zawierał świeżo dodane.
+  await awardOverdueEntryPenalties(supabase, tutorId)
   const data = await getTutorLessons(supabase, tutorId)
   const filter = searchParams.filter ?? 'all'
 
@@ -117,11 +127,30 @@ export default async function TutorLessonsPage({
 
   return (
     <div className="mx-auto w-full max-w-[1100px]">
-      <header className="mb-5">
-        <h1 className="text-[20px] font-black text-primary">Lekcje i wpisy</h1>
-        <p className="text-[12px] text-dim">
-          Uzupełnij wpisy do 48h od końca lekcji. Po tym czasie pole edycji się blokuje.
-        </p>
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[20px] font-black text-primary">Dziennik wpisów</h1>
+          <p className="text-[12px] text-dim">
+            Uzupełnij wpisy do 48h od końca lekcji. Po tym czasie pole edycji się blokuje
+            i otrzymujesz punkt karny.
+          </p>
+        </div>
+        {data.penaltyPoints > 0 && (
+          <div
+            className="flex items-center gap-2 rounded-[10px] px-3 py-2"
+            style={{ border: '1px solid #EF444433', backgroundColor: '#EF444410' }}
+          >
+            <span aria-hidden className="text-[16px]">⚠</span>
+            <div>
+              <div className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: '#EF4444' }}>
+                Punkty karne
+              </div>
+              <div className="text-[16px] font-black" style={{ color: '#EF4444' }}>
+                {data.penaltyPoints}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Filling form */}
@@ -238,13 +267,15 @@ export default async function TutorLessonsPage({
 
 function MissingEntryCard({ lesson }: { lesson: TutorLessonRow }) {
   const hours = lesson.hoursLeftForEntry ?? 0
-  const urgent = hours < 12
+  const overdue = hours < 0 // po 48h — wpis spóźniony (punkt karny), ale wciąż wymagany
+  const urgent = !overdue && hours < 12
+  const borderColor = overdue ? '#EF4444' : urgent ? '#EF4444' : '#FF6F4A'
 
   return (
     <article
       className="flex items-center gap-4 rounded-card bg-surface p-4"
       style={{
-        borderLeft: `4px solid ${urgent ? '#EF4444' : '#FF6F4A'}`,
+        borderLeft: `4px solid ${borderColor}`,
         borderTopLeftRadius: 4,
         borderBottomLeftRadius: 4,
       }}
@@ -279,19 +310,21 @@ function MissingEntryCard({ lesson }: { lesson: TutorLessonRow }) {
       <span
         className="rounded-md px-3 py-1.5 text-[11px] font-extrabold"
         style={
-          urgent
+          overdue
             ? { backgroundColor: '#EF444422', color: '#EF4444' }
-            : { backgroundColor: '#FFCA2822', color: '#FFCA28' }
+            : urgent
+              ? { backgroundColor: '#EF444422', color: '#EF4444' }
+              : { backgroundColor: '#FFCA2822', color: '#FFCA28' }
         }
       >
-        {urgent ? '⚠ ' : ''}Zostało {hours}h
+        {overdue ? `⚠ Spóźniony o ${Math.abs(hours)}h · punkt karny` : `${urgent ? '⚠ ' : ''}Zostało ${hours}h`}
       </span>
       <Link
         href={`/panel/tutor/lessons?fill=${lesson.id}`}
         className="rounded-[10px] px-4 py-2 text-[12px] font-extrabold transition-colors hover:brightness-110"
         style={{ backgroundColor: '#3B8FF026', color: '#3B8FF0' }}
       >
-        📝 Uzupełnij
+        📝 Uzupełnij{overdue ? ' (spóźniony)' : ''}
       </Link>
     </article>
   )
@@ -300,11 +333,12 @@ function MissingEntryCard({ lesson }: { lesson: TutorLessonRow }) {
 function RecentEntryRow({
   lesson,
 }: {
-  lesson: TutorLessonRow & { entry: { topic: string | null; hasHomework: boolean } }
+  lesson: TutorLessonRow & {
+    entry: { topic: string | null; hasHomework: boolean; editedAt: string | null }
+  }
 }) {
   const status = lesson.entryStatus ?? 'missing'
   const meta = ENTRY_STATUS_META[status as keyof typeof ENTRY_STATUS_META] ?? ENTRY_STATUS_META.missing
-  const isLocked = status === 'locked'
   const isBlocked = status === 'blocked' || status === 'no_entry'
 
   return (
@@ -322,6 +356,15 @@ function RecentEntryRow({
           <LevelBadge level={lesson.level} label={lesson.levelLabel} />
           <SubjectDot color={lesson.subjectColor} />
           <span className="text-[11px] text-secondary">{lesson.subjectName}</span>
+          {lesson.entry.editedAt && (
+            <span
+              className="rounded-md px-1.5 py-0.5 text-[10px] font-bold"
+              style={{ backgroundColor: '#7C5CFC22', color: '#7C5CFC' }}
+              title={`Edytowany ${formatEditedAt(lesson.entry.editedAt)}`}
+            >
+              ✎ Edytowany {formatEditedAt(lesson.entry.editedAt)}
+            </span>
+          )}
         </div>
         {lesson.entry.topic && (
           <div className="mt-0.5 truncate text-[11px] text-dim">{lesson.entry.topic}</div>
@@ -342,17 +385,26 @@ function RecentEntryRow({
         >
           {meta.label}
         </span>
-        {!isBlocked && !isLocked && (
+        {!isBlocked && (
           <Link
             href={`/panel/tutor/lessons?fill=${lesson.id}`}
             className="rounded-[8px] border border-subtle px-3 py-1 text-[10px] font-bold text-secondary hover:bg-surface-hover"
           >
-            {status === 'draft' ? 'Edytuj' : 'Podgląd'}
+            {status === 'draft' || status === 'published' || status === 'locked' ? 'Edytuj' : 'Podgląd'}
           </Link>
         )}
       </div>
     </div>
   )
+}
+
+function formatEditedAt(iso: string): string {
+  const d = new Date(iso)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  return `${dd}.${mm} o ${hh}:${mi}`
 }
 
 function FilterPill({

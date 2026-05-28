@@ -1,10 +1,10 @@
 /**
  * Stałe SEO współdzielone przez root layout, sitemap, robots i OG image.
- * SITE_URL jest brany z NEXT_PUBLIC_SITE_URL; w developmencie domyślnie eduluz.pl
+ * SITE_URL jest brany z NEXT_PUBLIC_SITE_URL; w developmencie domyślnie edu-luz.com
  * — na produkcji ustaw zmienną na docelową domenę.
  */
 
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://eduluz.pl";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://edu-luz.com";
 
 export const SITE_NAME = "EDU LUZ";
 

@@ -16,6 +16,7 @@ const NAV: PanelNavItem[] = [
   { href: '/panel/admin/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/panel/admin/schedule', label: 'Harmonogram', icon: '📅' },
   { href: '/panel/admin/tutors', label: 'Korepetytorzy', icon: '👨‍🏫' },
+  { href: '/panel/admin/lessons', label: 'Dziennik wpisów', icon: '📝' },
   { href: '/panel/admin/students', label: 'Uczniowie i grupy', icon: '👥' },
   { href: '/panel/admin/payments', label: 'Płatności', icon: '💳' },
   { href: '/panel/admin/settings', label: 'Ustawienia', icon: '⚙' },

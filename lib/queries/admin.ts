@@ -184,6 +184,8 @@ export type AdminTutorRow = {
   fullName: string
   initials: string
   avatarColor: string
+  phone: string | null
+  email: string | null
   subjects: string[]
   studentCount: number
   lessonsPerWeek: number
@@ -208,6 +210,7 @@ export type AdminStudentRow = {
   parentId: string
   parentName: string
   parentPhone: string | null
+  parentEmail: string | null
   classes: Array<{
     classId: string
     form: Enums<'class_form'>
@@ -218,6 +221,12 @@ export type AdminStudentRow = {
     groupName: string | null
   }>
   totalMonthly: number
+  /** Status płatności bieżącego miesiąca (najnowsza płatność rodzica). */
+  payStatus: Enums<'payment_status'> | null
+  /** Liczba opóźnień rodzica (max delay_number z płatności). */
+  lateCount: number
+  /** Najwcześniejsza data startu zajęć ucznia (początek umowy). */
+  contractStart: string | null
 }
 
 export type AdminGroupRow = {
@@ -275,7 +284,7 @@ async function loadAllTutors(supabase: Supabase): Promise<AdminTutorRow[]> {
       `
         profile_id,
         bio,
-        profile:profiles!tutors_profile_id_fkey ( first_name, last_name, is_active ),
+        profile:profiles!tutors_profile_id_fkey ( first_name, last_name, is_active, phone, email ),
         subjects:tutor_subjects!tutor_subjects_tutor_id_fkey (
           subject:subjects!tutor_subjects_subject_id_fkey ( name )
         )
@@ -286,7 +295,7 @@ async function loadAllTutors(supabase: Supabase): Promise<AdminTutorRow[]> {
   type TRow = {
     profile_id: string
     bio: string | null
-    profile: { first_name: string; last_name: string; is_active: boolean }
+    profile: { first_name: string; last_name: string; is_active: boolean; phone: string | null; email: string | null }
     subjects: Array<{ subject: { name: string } }>
   }
   const rows = (data ?? []) as unknown as TRow[]
@@ -333,6 +342,8 @@ async function loadAllTutors(supabase: Supabase): Promise<AdminTutorRow[]> {
       fullName,
       initials: getInitials(t.profile.first_name, t.profile.last_name),
       avatarColor: getAvatarColor(fullName),
+      phone: t.profile.phone,
+      email: t.profile.email,
       subjects: t.subjects.map((s) => s.subject.name),
       studentCount: studentSet.size,
       lessonsPerWeek: slotsQ.count ?? 0,
@@ -349,6 +360,43 @@ async function loadAllTutors(supabase: Supabase): Promise<AdminTutorRow[]> {
 // PUBLIC: getAdminDashboard
 // ════════════════════════════════════════════════════════════════════════════
 
+export type AdminAlert = {
+  type: 'absence' | 'plan' | 'entry' | 'makeup'
+  icon: string
+  color: string
+  title: string
+  desc: string
+  time: string
+  lessons?: Array<{ time: string; student: string; subject: string; room: string }>
+  note?: string | null
+  message?: string | null
+  affected?: string | null
+  entries?: Array<{ tutor: string; date: string; student: string; overdue: string }>
+  items?: Array<{ student: string; tutor: string; proposed: string; waiting: string }>
+  /** Absence alert: id rekordu tutor_absences do zatwierdzenia. */
+  absenceId?: string
+  /** Makeup alert: profile_id korepetytorów do których wysłać przypomnienie. */
+  reminderTutorIds?: string[]
+}
+
+export type AdminTodayTutor = {
+  name: string
+  initials: string
+  subjects: string[]
+  lessons: number
+  done: number
+  current: string | null
+  room: string | null
+}
+
+export type AdminRoomNow = {
+  name: string
+  status: 'free' | 'occupied'
+  tutor: string | null
+  until: string | null
+  next: string | null
+}
+
 export type AdminDashboardData = {
   todayLessons: {
     total: number
@@ -357,18 +405,34 @@ export type AdminDashboardData = {
     cancelled: number
   }
   studentsActive: number
-  tutorsActive: number
+  studentsIndividual: number
+  studentsInGroups: number
+  groupsActive: number
+  tutorsPresent: number
+  tutorsTotal: number
+  absentTutors: Array<{ absenceId: string; name: string; initials: string; reason: string; affectedLessons: number }>
+  monthLabel: string
   monthRevenue: number
   monthRealized: number
   monthPlanned: number
   monthCancelled: number
   monthNoShow: number
+  monthTotal: number
+  finance: {
+    revenueCollected: number
+    revenueExpected: number
+    tutorCostsPlanned: number
+    tutorCostsActual: number
+  }
   alerts: {
     pendingAbsences: number
     blockedEntries: number
     overduePayments: number
     pendingMakeups: number
   }
+  alertsDetailed: AdminAlert[]
+  todayByTutor: AdminTodayTutor[]
+  roomsNow: AdminRoomNow[]
   todaySchedule: Array<{
     lessonId: string
     startTime: string
@@ -385,6 +449,7 @@ export type AdminDashboardData = {
     parentId: string
     parentName: string
     childrenNames: string
+    subjects: string
     amount: number
     delayNumber: number
     status: Enums<'payment_status'>
@@ -398,6 +463,8 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
     .toISOString()
     .slice(0, 10)
 
+  const monthLabel = new Date(today).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })
+
   const [
     todayLessonsQ,
     monthLessonsQ,
@@ -409,6 +476,14 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
     pendingMakeupQ,
     todayScheduleQ,
     pendingPaymentsQ,
+    groupsActiveQ,
+    groupMembersQ,
+    absencesTodayQ,
+    tutorRatesQ,
+    blockedEntriesListQ,
+    stalledMakeupQ,
+    planChangeQ,
+    roomsAllQ,
   ] = await Promise.all([
     supabase
       .from('lessons')
@@ -416,7 +491,7 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
       .eq('lesson_date', today),
     supabase
       .from('lessons')
-      .select('id, status, start_time, end_time, cancelled_more_than_24h, tutor_id')
+      .select('id, status, duration_minutes, tutor_id, class:classes!lessons_class_id_fkey ( form )')
       .gte('lesson_date', monthStart)
       .lte('lesson_date', monthEnd),
     supabase
@@ -445,7 +520,7 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
       .from('lessons')
       .select(
         `
-          id, start_time, end_time, status,
+          id, start_time, end_time, status, tutor_id,
           tutor:tutors!lessons_tutor_id_fkey (
             profile:profiles!tutors_profile_id_fkey ( first_name, last_name )
           ),
@@ -471,6 +546,7 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
             profile:profiles!parents_profile_id_fkey ( first_name, last_name )
           ),
           lines:payment_lines!payment_lines_payment_id_fkey (
+            description,
             student:students!payment_lines_student_id_fkey (
               profile:profiles!students_profile_id_fkey ( first_name, last_name )
             )
@@ -480,6 +556,76 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
       .in('status', ['pending', 'overdue'])
       .order('billing_month', { ascending: false })
       .limit(20),
+    // groupsActiveQ
+    supabase.from('groups').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+    // groupMembersQ — aktywni członkowie grup (distinct student count liczony w JS)
+    supabase.from('group_members').select('student_id').is('left_at', null),
+    // absencesTodayQ — zatwierdzone nieobecności obejmujące dziś, z nazwą tutora + affected
+    supabase
+      .from('tutor_absences')
+      .select(
+        `
+          id, affected_lessons_count, reason, absence_type, start_date, end_date,
+          tutor:tutors!tutor_absences_tutor_id_fkey (
+            profile:profiles!tutors_profile_id_fkey ( first_name, last_name )
+          )
+        `,
+      )
+      .lte('start_date', today)
+      .gte('end_date', today),
+    // tutorRatesQ — najnowsze stawki per tutor
+    supabase
+      .from('tutor_rates')
+      .select('tutor_id, individual_rate, group_rate, effective_from')
+      .order('effective_from', { ascending: false }),
+    // blockedEntriesListQ — completed_no_entry > 48h (lista do alertu)
+    supabase
+      .from('lessons')
+      .select(
+        `
+          lesson_date, end_time,
+          tutor:tutors!lessons_tutor_id_fkey ( profile:profiles!tutors_profile_id_fkey ( first_name, last_name ) ),
+          subject:subjects!lessons_subject_id_fkey ( name ),
+          class:classes!lessons_class_id_fkey (
+            student:students!classes_student_id_fkey ( profile:profiles!students_profile_id_fkey ( first_name, last_name ) ),
+            group:groups!classes_group_id_fkey ( name )
+          )
+        `,
+      )
+      .eq('status', 'completed_no_entry')
+      .lt('lesson_date', today)
+      .order('lesson_date', { ascending: false }),
+    // stalledMakeupQ — propozycje rodziców czekające na tutora (waiting_for_tutor)
+    supabase
+      .from('makeup_requests')
+      .select(
+        `
+          updated_at,
+          original_lesson:lessons!makeup_requests_original_lesson_id_fkey (
+            tutor:tutors!lessons_tutor_id_fkey ( profile_id, profile:profiles!tutors_profile_id_fkey ( first_name, last_name ) ),
+            class:classes!lessons_class_id_fkey (
+              student:students!classes_student_id_fkey ( profile:profiles!students_profile_id_fkey ( first_name, last_name ) ),
+              group:groups!classes_group_id_fkey ( name )
+            )
+          ),
+          proposals:makeup_proposals!makeup_proposals_request_id_fkey ( proposed_date, proposed_start, created_at, proposed_by )
+        `,
+      )
+      .eq('status', 'waiting_for_tutor'),
+    // planChangeQ — prośby o zmianę planu (direct_messages od tutorów do admina)
+    supabase
+      .from('direct_messages')
+      .select(
+        `
+          body, sent_at,
+          sender:profiles!direct_messages_sender_id_fkey ( first_name, last_name )
+        `,
+      )
+      .eq('subject', 'Prośba o zmianę planu')
+      .order('sent_at', { ascending: false })
+      .limit(5),
+    // roomsAllQ
+    supabase.from('rooms').select('id, name').eq('is_active', true).order('name'),
   ])
 
   if (todayLessonsQ.error) throw todayLessonsQ.error
@@ -500,32 +646,107 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
     else if (l.status === 'cancelled') todayLessons.cancelled += 1
   }
 
-  // Month aggregates
+  // Tutor rates map (najnowsza stawka per tutor)
+  type RateRow = { tutor_id: string; individual_rate: number; group_rate: number; effective_from: string }
+  const rateByTutor = new Map<string, { individual: number; group: number }>()
+  for (const r of (tutorRatesQ.data ?? []) as RateRow[]) {
+    if (!rateByTutor.has(r.tutor_id)) {
+      rateByTutor.set(r.tutor_id, {
+        individual: Number(r.individual_rate),
+        group: Number(r.group_rate),
+      })
+    }
+  }
+
+  // Month aggregates + koszty korepetytorów
+  type MonthLessonRow = {
+    status: Enums<'lesson_status'>
+    duration_minutes: number
+    tutor_id: string
+    class: { form: Enums<'class_form'> } | null
+  }
   let monthRealized = 0
   let monthPlanned = 0
   let monthCancelled = 0
   let monthNoShow = 0
-  for (const l of monthLessonsQ.data ?? []) {
-    if (l.status === 'completed' || l.status === 'completed_no_entry') monthRealized += 1
-    else if (l.status === 'planned' || l.status === 'in_progress') monthPlanned += 1
-    else if (l.status === 'cancelled') monthCancelled += 1
-    else if (l.status === 'no_show') monthNoShow += 1
+  let tutorCostsPlanned = 0
+  let tutorCostsActual = 0
+  for (const l of (monthLessonsQ.data ?? []) as unknown as MonthLessonRow[]) {
+    const rate = rateByTutor.get(l.tutor_id)
+    const hourly = rate ? (l.class?.form === 'group' ? rate.group : rate.individual) : 0
+    const cost = (hourly * l.duration_minutes) / 60
+    const isRealized = l.status === 'completed' || l.status === 'completed_no_entry'
+    const isPlannedish = l.status === 'planned' || l.status === 'in_progress'
+    if (isRealized) {
+      monthRealized += 1
+      tutorCostsActual += cost
+      tutorCostsPlanned += cost
+    } else if (isPlannedish) {
+      monthPlanned += 1
+      tutorCostsPlanned += cost
+    } else if (l.status === 'cancelled') {
+      monthCancelled += 1
+    } else if (l.status === 'no_show') {
+      monthNoShow += 1
+      tutorCostsPlanned += cost
+    }
   }
+  const monthTotal = monthRealized + monthPlanned + monthCancelled + monthNoShow
 
   const monthRevenue = (monthPaymentsQ.data ?? [])
     .filter((p) => p.status === 'paid' || p.status === 'paid_late')
     .reduce((sum, p) => sum + Number(p.paid_amount ?? p.total_amount), 0)
+  const revenueExpected = (monthPaymentsQ.data ?? []).reduce(
+    (sum, p) => sum + Number(p.total_amount),
+    0,
+  )
 
-  const activeTutors = (tutorsQ.data ?? []).filter((t) => {
+  const tutorsTotal = (tutorsQ.data ?? []).filter((t) => {
     const profile = (t.profile as unknown) as { is_active: boolean }
     return profile.is_active
   }).length
 
+  // Studenci: split indyw / w grupach
+  const groupMemberSet = new Set<string>()
+  for (const m of groupMembersQ.data ?? []) groupMemberSet.add(m.student_id)
+  const studentsActive = studentsQ.count ?? 0
+  const studentsInGroups = groupMemberSet.size
+  const studentsIndividual = Math.max(0, studentsActive - studentsInGroups)
+
+  // Nieobecni dziś
+  type AbsenceTodayRow = {
+    id: string
+    affected_lessons_count: number | null
+    reason: string | null
+    absence_type: Enums<'tutor_absence_type'>
+    start_date: string
+    end_date: string
+    tutor: { profile: { first_name: string; last_name: string } }
+  }
+  const ABSENCE_REASON_LABEL: Record<Enums<'tutor_absence_type'>, string> = {
+    sick: 'Choroba',
+    vacation: 'Urlop',
+    other: 'Nieobecność',
+  }
+  const absentTutors = ((absencesTodayQ.data ?? []) as unknown as AbsenceTodayRow[]).map((a) => {
+    const name = `${a.tutor.profile.first_name} ${a.tutor.profile.last_name}`
+    return {
+      absenceId: a.id,
+      name,
+      initials: getInitials(a.tutor.profile.first_name, a.tutor.profile.last_name),
+      reason: `${ABSENCE_REASON_LABEL[a.absence_type]} (${formatShortDate(a.start_date)}–${formatShortDate(a.end_date)})`,
+      affectedLessons: a.affected_lessons_count ?? 0,
+    }
+  })
+  const tutorsPresent = Math.max(0, tutorsTotal - absentTutors.length)
+
+  // ── Today schedule rows + todayByTutor ──
   type ScheduleRow = {
     id: string
     start_time: string
     end_time: string
     status: Enums<'lesson_status'>
+    tutor_id: string
     tutor: { profile: { first_name: string; last_name: string } }
     subject: { name: string; color: string }
     room: { name: string } | null
@@ -534,7 +755,8 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
       group: { name: string } | null
     }
   }
-  const todaySchedule = ((todayScheduleQ.data ?? []) as unknown as ScheduleRow[]).map((l) => ({
+  const scheduleRows = (todayScheduleQ.data ?? []) as unknown as ScheduleRow[]
+  const todaySchedule = scheduleRows.map((l) => ({
     lessonId: l.id,
     startTime: l.start_time.slice(0, 5),
     endTime: l.end_time.slice(0, 5),
@@ -550,6 +772,80 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
     status: l.status,
   }))
 
+  // Bieżąca godzina (HH:MM) do "current" i roomsNow
+  const nowHM = new Date().toTimeString().slice(0, 5)
+
+  const byTutor = new Map<string, AdminTodayTutor & { _subjects: Set<string> }>()
+  for (const l of scheduleRows) {
+    const name = `${l.tutor.profile.first_name} ${l.tutor.profile.last_name}`
+    let entry = byTutor.get(l.tutor_id)
+    if (!entry) {
+      entry = {
+        name,
+        initials: getInitials(l.tutor.profile.first_name, l.tutor.profile.last_name),
+        subjects: [],
+        lessons: 0,
+        done: 0,
+        current: null,
+        room: null,
+        _subjects: new Set<string>(),
+      }
+      byTutor.set(l.tutor_id, entry)
+    }
+    if (l.status === 'cancelled') continue
+    entry.lessons += 1
+    entry._subjects.add(l.subject.name)
+    if (l.status === 'completed' || l.status === 'completed_no_entry') entry.done += 1
+    const start = l.start_time.slice(0, 5)
+    const end = l.end_time.slice(0, 5)
+    if ((l.status === 'in_progress' || (start <= nowHM && nowHM < end)) && !entry.current) {
+      const who = l.class.group
+        ? l.class.group.name
+        : l.class.student
+          ? `${l.class.student.profile.first_name} ${l.class.student.profile.last_name.charAt(0)}.`
+          : '—'
+      entry.current = `${start}–${end} · ${who}`
+      entry.room = l.room?.name ?? null
+    }
+  }
+  const todayByTutor: AdminTodayTutor[] = Array.from(byTutor.values())
+    .map((t) => ({
+      name: t.name,
+      initials: t.initials,
+      subjects: Array.from(t._subjects),
+      lessons: t.lessons,
+      done: t.done,
+      current: t.current,
+      room: t.room,
+    }))
+    .filter((t) => t.lessons > 0)
+
+  // ── Rooms now ──
+  type RoomRow = { id: string; name: string }
+  const roomsNow: AdminRoomNow[] = ((roomsAllQ.data ?? []) as RoomRow[]).map((room) => {
+    const roomLessons = scheduleRows
+      .filter((l) => l.room?.name === room.name && l.status !== 'cancelled')
+      .sort((a, b) => a.start_time.localeCompare(b.start_time))
+    const ongoing = roomLessons.find(
+      (l) => l.start_time.slice(0, 5) <= nowHM && nowHM < l.end_time.slice(0, 5),
+    )
+    const next = roomLessons.find((l) => l.start_time.slice(0, 5) > nowHM)
+    const nextLabel = next
+      ? `${next.tutor.profile.first_name} ${next.tutor.profile.last_name.charAt(0)}. ${next.start_time.slice(0, 5)}`
+      : null
+    if (ongoing) {
+      return {
+        name: room.name,
+        status: 'occupied' as const,
+        tutor: `${ongoing.tutor.profile.first_name} ${ongoing.tutor.profile.last_name.charAt(0)}.`,
+        until: ongoing.end_time.slice(0, 5),
+        next: nextLabel,
+      }
+    }
+    return { name: room.name, status: 'free' as const, tutor: null, until: null, next: nextLabel }
+  })
+
+  // ── Pending payments (z przedmiotami) ──
   type PaymentRow = {
     id: string
     total_amount: number
@@ -560,43 +856,194 @@ export async function getAdminDashboard(supabase: Supabase): Promise<AdminDashbo
       profile: { first_name: string; last_name: string }
     }
     lines: Array<{
+      description: string
       student: { profile: { first_name: string; last_name: string } }
     }>
   }
   const pendingPayments = ((pendingPaymentsQ.data ?? []) as unknown as PaymentRow[]).map((p) => {
     const childSet = new Set<string>()
+    const subjectSet = new Set<string>()
     for (const line of p.lines) {
       childSet.add(`${line.student.profile.first_name} ${line.student.profile.last_name}`)
+      if (line.description) subjectSet.add(line.description)
     }
     return {
       paymentId: p.id,
       parentId: p.parent.profile_id,
       parentName: `${p.parent.profile.first_name} ${p.parent.profile.last_name}`,
       childrenNames: Array.from(childSet).join(', '),
+      subjects: Array.from(subjectSet).join(' + '),
       amount: Number(p.total_amount),
       delayNumber: p.delay_number,
       status: p.status,
     }
   })
 
+  // ── Alerts (szczegółowe) ──
+  const alertsDetailed: AdminAlert[] = []
+
+  // Absence alerts (jeden per nieobecność obejmującą dziś)
+  for (const a of (absentTutors)) {
+    alertsDetailed.push({
+      type: 'absence',
+      icon: '⚠️',
+      color: '#EF4444',
+      title: `Nieobecność — ${a.name}`,
+      desc: `${a.reason} · ${a.affectedLessons} lekcji do odwołania`,
+      time: 'dziś',
+      note: 'Rodzice zostaną powiadomieni automatycznie po zatwierdzeniu.',
+      absenceId: a.absenceId,
+    })
+  }
+
+  // Plan change requests
+  type PlanRow = { body: string; sent_at: string; sender: { first_name: string; last_name: string } }
+  for (const m of (planChangeQ.data ?? []) as unknown as PlanRow[]) {
+    alertsDetailed.push({
+      type: 'plan',
+      icon: '📅',
+      color: '#FFCA28',
+      title: `Prośba o zmianę planu — ${m.sender.first_name} ${m.sender.last_name}`,
+      desc: m.body.length > 80 ? m.body.slice(0, 80) + '…' : m.body,
+      time: formatRelativeTime(m.sent_at),
+      message: m.body,
+    })
+  }
+
+  // Blocked entries (completed_no_entry > 48h)
+  type BlockedRow = {
+    lesson_date: string
+    end_time: string
+    tutor: { profile: { first_name: string; last_name: string } }
+    subject: { name: string }
+    class: {
+      student: { profile: { first_name: string; last_name: string } } | null
+      group: { name: string } | null
+    }
+  }
+  const nowMs = Date.now()
+  const blockedRows = ((blockedEntriesListQ.data ?? []) as unknown as BlockedRow[]).filter((e) => {
+    const end = new Date(`${e.lesson_date}T${e.end_time}`).getTime()
+    return nowMs - end > 48 * 3600 * 1000
+  })
+  if (blockedRows.length > 0) {
+    alertsDetailed.push({
+      type: 'entry',
+      icon: '📝',
+      color: '#FF6F4A',
+      title: `${blockedRows.length} ${blockedRows.length === 1 ? 'zablokowany wpis' : 'zablokowane wpisy'}`,
+      desc: 'Minął termin 48h na uzupełnienie wpisu',
+      time: 'dziś',
+      entries: blockedRows.slice(0, 6).map((e) => {
+        const hoursOverdue = Math.floor((nowMs - new Date(`${e.lesson_date}T${e.end_time}`).getTime()) / 3600_000)
+        return {
+          tutor: `${e.tutor.profile.first_name} ${e.tutor.profile.last_name.charAt(0)}.`,
+          date: formatShortDate(e.lesson_date),
+          student: e.class.group
+            ? e.class.group.name
+            : e.class.student
+              ? `${e.class.student.profile.first_name} ${e.class.student.profile.last_name}`
+              : '—',
+          overdue: `${hoursOverdue}h`,
+        }
+      }),
+    })
+  }
+
+  // Stalled makeups (waiting_for_tutor)
+  type StalledRow = {
+    updated_at: string
+    original_lesson: {
+      tutor: { profile_id: string; profile: { first_name: string; last_name: string } }
+      class: {
+        student: { profile: { first_name: string; last_name: string } } | null
+        group: { name: string } | null
+      }
+    }
+    proposals: Array<{ proposed_date: string | null; proposed_start: string | null; created_at: string; proposed_by: Enums<'makeup_actor'> }>
+  }
+  const stalledRows = (stalledMakeupQ.data ?? []) as unknown as StalledRow[]
+  if (stalledRows.length > 0) {
+    const reminderTutorIds = Array.from(
+      new Set(stalledRows.map((m) => m.original_lesson.tutor.profile_id)),
+    )
+    alertsDetailed.push({
+      type: 'makeup',
+      icon: '🔄',
+      color: '#06B6D4',
+      title: `${stalledRows.length} ${stalledRows.length === 1 ? 'odrabianie czeka' : 'odrabiania czekają'} na korepetytora`,
+      desc: 'Propozycje rodziców bez reakcji korepetytora',
+      time: 'kilka dni',
+      reminderTutorIds,
+      items: stalledRows.slice(0, 6).map((m) => {
+        const latest = [...m.proposals].sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
+        const waitingDays = latest
+          ? Math.max(0, Math.floor((nowMs - new Date(latest.created_at).getTime()) / 86_400_000))
+          : 0
+        return {
+          student: m.original_lesson.class.group
+            ? m.original_lesson.class.group.name
+            : m.original_lesson.class.student
+              ? `${m.original_lesson.class.student.profile.first_name} ${m.original_lesson.class.student.profile.last_name}`
+              : '—',
+          tutor: `${m.original_lesson.tutor.profile.first_name} ${m.original_lesson.tutor.profile.last_name.charAt(0)}.`,
+          proposed: latest?.proposed_date
+            ? `${formatShortDate(latest.proposed_date)}${latest.proposed_start ? `, ${latest.proposed_start.slice(0, 5)}` : ''}`
+            : '—',
+          waiting: `${waitingDays} dni`,
+        }
+      }),
+    })
+  }
+
   return {
     todayLessons,
-    studentsActive: studentsQ.count ?? 0,
-    tutorsActive: activeTutors,
+    studentsActive,
+    studentsIndividual,
+    studentsInGroups,
+    groupsActive: groupsActiveQ.count ?? 0,
+    tutorsPresent,
+    tutorsTotal,
+    absentTutors,
+    monthLabel,
     monthRevenue,
     monthRealized,
     monthPlanned,
     monthCancelled,
     monthNoShow,
+    monthTotal,
+    finance: {
+      revenueCollected: monthRevenue,
+      revenueExpected,
+      tutorCostsPlanned: Math.round(tutorCostsPlanned),
+      tutorCostsActual: Math.round(tutorCostsActual),
+    },
     alerts: {
       pendingAbsences: absencesQ.count ?? 0,
       blockedEntries: overdueEntriesQ.count ?? 0,
       overduePayments: pendingPayments.length,
       pendingMakeups: pendingMakeupQ.count ?? 0,
     },
+    alertsDetailed,
+    todayByTutor,
+    roomsNow,
     todaySchedule,
     pendingPayments,
   }
+}
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso)
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60_000)
+  if (mins < 60) return `${mins} min temu`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h temu`
+  return `${Math.floor(hours / 24)} dni temu`
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -622,6 +1069,9 @@ export type AdminScheduleData = {
     roomId: string | null
     roomName: string | null
     studentLabel: string
+    level: Enums<'student_level'> | null
+    levelLabel: string | null
+    form: Enums<'class_form'> | null
   }>
 }
 
@@ -647,6 +1097,7 @@ export async function getAdminSchedule(
           subject:subjects!lessons_subject_id_fkey ( name, color ),
           room:rooms!lessons_room_id_fkey ( name ),
           class:classes!lessons_class_id_fkey (
+            level, form,
             student:students!classes_student_id_fkey (
               profile:profiles!students_profile_id_fkey ( first_name, last_name )
             ),
@@ -686,6 +1137,8 @@ export async function getAdminSchedule(
     subject: { name: string; color: string }
     room: { name: string } | null
     class: {
+      level: Enums<'student_level'> | null
+      form: Enums<'class_form'> | null
       student: { profile: { first_name: string; last_name: string } } | null
       group: { name: string } | null
     }
@@ -719,6 +1172,9 @@ export async function getAdminSchedule(
       : l.class.student
         ? `${l.class.student.profile.first_name} ${l.class.student.profile.last_name}`
         : '—',
+    level: l.class.level,
+    levelLabel: l.class.level ? LEVEL_LABELS[l.class.level] : null,
+    form: l.class.form,
   }))
 
   return {
@@ -777,7 +1233,7 @@ export async function getAdminStudents(supabase: Supabase): Promise<AdminStudent
           profile_id, school_class, level, birth_date, parent_id,
           profile:profiles!students_profile_id_fkey ( first_name, last_name ),
           parent:parents!students_parent_id_fkey (
-            profile:profiles!parents_profile_id_fkey ( first_name, last_name, phone )
+            profile:profiles!parents_profile_id_fkey ( first_name, last_name, phone, email )
           )
         `,
       ),
@@ -831,7 +1287,7 @@ export async function getAdminStudents(supabase: Supabase): Promise<AdminStudent
     parent_id: string
     profile: { first_name: string; last_name: string }
     parent: {
-      profile: { first_name: string; last_name: string; phone: string | null }
+      profile: { first_name: string; last_name: string; phone: string | null; email: string | null }
     }
   }
 
@@ -845,6 +1301,7 @@ export async function getAdminStudents(supabase: Supabase): Promise<AdminStudent
     student_id: string | null
     group_id: string | null
     monthly_fee: number
+    start_date: string
     subject: { name: string; color: string }
     tutor: { profile: { first_name: string; last_name: string } }
     group: { name: string } | null
@@ -867,7 +1324,7 @@ export async function getAdminStudents(supabase: Supabase): Promise<AdminStudent
       .from('classes')
       .select(
         `
-          id, form, student_id, group_id, monthly_fee,
+          id, form, student_id, group_id, monthly_fee, start_date,
           subject:subjects!classes_subject_id_fkey ( name, color ),
           tutor:tutors!classes_tutor_id_fkey (
             profile:profiles!tutors_profile_id_fkey ( first_name, last_name )
@@ -894,16 +1351,39 @@ export async function getAdminStudents(supabase: Supabase): Promise<AdminStudent
     studentGroupIds.set(m.student_id, set)
   }
 
+  // Płatności per rodzic — status bieżącego miesiąca + liczba opóźnień (max delay_number).
+  const parentIds = Array.from(new Set(studentRows.map((s) => s.parent_id)))
+  const currentMonth = new Date().toISOString().slice(0, 7) + '-01'
+  const payStatusByParent = new Map<string, Enums<'payment_status'>>()
+  const lateCountByParent = new Map<string, number>()
+  if (parentIds.length > 0) {
+    const { data: pays } = await supabase
+      .from('payments')
+      .select('parent_id, billing_month, status, delay_number')
+      .in('parent_id', parentIds)
+      .order('billing_month', { ascending: false })
+    for (const p of pays ?? []) {
+      // status bieżącego miesiąca (pierwszy najnowszy wiersz per rodzic dla currentMonth, fallback najnowszy)
+      if (p.billing_month === currentMonth && !payStatusByParent.has(p.parent_id)) {
+        payStatusByParent.set(p.parent_id, p.status)
+      }
+      const prev = lateCountByParent.get(p.parent_id) ?? 0
+      if (p.delay_number > prev) lateCountByParent.set(p.parent_id, p.delay_number)
+    }
+  }
+
   const students: AdminStudentRow[] = studentRows.map((s) => {
     const fullName = `${s.profile.first_name} ${s.profile.last_name}`
     const myClasses: AdminStudentRow['classes'] = []
     let total = 0
+    let contractStart: string | null = null
 
     for (const c of allClasses) {
       const isDirect = c.student_id === s.profile_id
       const memberOfGroup = c.group_id && studentGroupIds.get(s.profile_id)?.has(c.group_id)
       if (!isDirect && !memberOfGroup) continue
       total += Number(c.monthly_fee)
+      if (!contractStart || c.start_date < contractStart) contractStart = c.start_date
       myClasses.push({
         classId: c.id,
         form: c.form,
@@ -927,8 +1407,12 @@ export async function getAdminStudents(supabase: Supabase): Promise<AdminStudent
       parentId: s.parent_id,
       parentName: `${s.parent.profile.first_name} ${s.parent.profile.last_name}`,
       parentPhone: s.parent.profile.phone,
+      parentEmail: s.parent.profile.email,
       classes: myClasses,
       totalMonthly: total,
+      payStatus: payStatusByParent.get(s.parent_id) ?? null,
+      lateCount: lateCountByParent.get(s.parent_id) ?? 0,
+      contractStart,
     }
   })
 
@@ -1030,6 +1514,17 @@ export type AdminPaymentRow = {
   delayNumber: number
   paidAt: string | null
   dueDate: string
+  /** Składowe opłaty — per uczeń (z kwotą). */
+  lines: Array<{ childName: string; description: string; amount: number }>
+  /** Historia wpłat rodzica w bieżącym roku (od najnowszego). */
+  history: Array<{
+    billingMonth: string
+    monthShort: string
+    status: Enums<'payment_status'>
+    paidAt: string | null
+    amount: number
+    onTime: boolean | null
+  }>
 }
 
 export type AdminPaymentsData = {
@@ -1062,6 +1557,7 @@ export async function getAdminPayments(
           profile:profiles!parents_profile_id_fkey ( first_name, last_name )
         ),
         lines:payment_lines!payment_lines_payment_id_fkey (
+          description, amount,
           student:students!payment_lines_student_id_fkey (
             profile:profiles!students_profile_id_fkey ( first_name, last_name )
           )
@@ -1085,6 +1581,8 @@ export async function getAdminPayments(
       profile: { first_name: string; last_name: string }
     }
     lines: Array<{
+      description: string
+      amount: number
       student: { profile: { first_name: string; last_name: string } }
     }>
   }
@@ -1095,12 +1593,39 @@ export async function getAdminPayments(
     year: 'numeric',
   })
 
+  // Historia wpłat rodziców (bieżący rok) — do panelu "Historia wpłat".
+  const yearStart = targetMonth.slice(0, 4) + '-01-01'
+  const parentIds = Array.from(new Set(rows.map((p) => p.parent.profile_id)))
+  const historyByParent = new Map<string, AdminPaymentRow['history']>()
+  if (parentIds.length > 0) {
+    const { data: hist } = await supabase
+      .from('payments')
+      .select('parent_id, billing_month, status, paid_at, total_amount, paid_on_time')
+      .in('parent_id', parentIds)
+      .gte('billing_month', yearStart)
+      .order('billing_month', { ascending: false })
+    for (const h of hist ?? []) {
+      const list = historyByParent.get(h.parent_id) ?? []
+      list.push({
+        billingMonth: h.billing_month,
+        monthShort: new Date(h.billing_month).toLocaleDateString('pl-PL', { month: 'short' }),
+        status: h.status,
+        paidAt: h.paid_at,
+        amount: Number(h.total_amount),
+        onTime: h.paid_on_time,
+      })
+      historyByParent.set(h.parent_id, list)
+    }
+  }
+
   const payments: AdminPaymentRow[] = rows.map((p) => {
     const parentName = `${p.parent.profile.first_name} ${p.parent.profile.last_name}`
     const children = new Set<string>()
-    for (const line of p.lines) {
-      children.add(`${line.student.profile.first_name} ${line.student.profile.last_name}`)
-    }
+    const lines = p.lines.map((line) => {
+      const childName = `${line.student.profile.first_name} ${line.student.profile.last_name}`
+      children.add(childName)
+      return { childName, description: line.description, amount: Number(line.amount) }
+    })
     return {
       paymentId: p.id,
       parentId: p.parent.profile_id,
@@ -1115,6 +1640,8 @@ export async function getAdminPayments(
       delayNumber: p.delay_number,
       paidAt: p.paid_at,
       dueDate: p.due_date,
+      lines,
+      history: historyByParent.get(p.parent.profile_id) ?? [],
     }
   })
 
@@ -1129,6 +1656,176 @@ export async function getAdminPayments(
   }
 
   return { month: targetMonth, monthLabel, payments, stats }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PUBLIC: getAdminJournal (dziennik wpisów — WSZYSCY korepetytorzy)
+// ════════════════════════════════════════════════════════════════════════════
+
+export type AdminJournalEntry = {
+  lessonId: string
+  date: string
+  startTime: string
+  endTime: string
+  tutorId: string
+  tutorName: string
+  tutorInitials: string
+  studentLabel: string
+  subjectName: string
+  subjectColor: string
+  level: Enums<'student_level'> | null
+  levelLabel: string | null
+  form: Enums<'class_form'> | null
+  status: Enums<'lesson_status'>
+  entryStatus: 'missing' | 'draft' | 'published' | 'locked'
+  topic: string | null
+  noteForStudent: string | null
+  /** Notatka wewnętrzna — widoczna tylko dla admina i korepetytora. */
+  internalNote: string | null
+  hasHomework: boolean
+  editedAt: string | null
+  /** Czy ta lekcja ma przyznany punkt karny (brak wpisu po 48h). */
+  hasPenalty: boolean
+}
+
+export type AdminJournalData = {
+  entries: AdminJournalEntry[]
+  /** Lista korepetytorów do filtra + liczba ich punktów karnych. */
+  tutors: Array<{ id: string; name: string; penaltyCount: number }>
+}
+
+export async function getAdminJournal(
+  supabase: Supabase,
+  tutorId?: string,
+): Promise<AdminJournalData> {
+  const today = new Date().toISOString().slice(0, 10)
+  const from = new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10)
+
+  let lessonsQ = supabase
+    .from('lessons')
+    .select(
+      `
+        id, lesson_date, start_time, end_time, status, tutor_id,
+        tutor:tutors!lessons_tutor_id_fkey ( profile:profiles!tutors_profile_id_fkey ( first_name, last_name ) ),
+        subject:subjects!lessons_subject_id_fkey ( name, color ),
+        class:classes!lessons_class_id_fkey (
+          level, form,
+          student:students!classes_student_id_fkey ( profile:profiles!students_profile_id_fkey ( first_name, last_name ) ),
+          group:groups!classes_group_id_fkey ( name )
+        ),
+        entry:entries!entries_lesson_id_fkey (
+          status, topic, note_for_student, internal_note, published_at, updated_at,
+          homework:homework!homework_entry_id_fkey ( id )
+        )
+      `,
+    )
+    .in('status', ['completed', 'completed_no_entry'])
+    .gte('lesson_date', from)
+    .lte('lesson_date', today)
+    .order('lesson_date', { ascending: false })
+    .order('start_time', { ascending: false })
+    .limit(200)
+  if (tutorId) lessonsQ = lessonsQ.eq('tutor_id', tutorId)
+
+  const [lessonsRes, penaltiesRes, tutorsRes] = await Promise.all([
+    lessonsQ,
+    supabase.from('tutor_penalty_points').select('tutor_id, lesson_id'),
+    supabase
+      .from('tutors')
+      .select('profile_id, profile:profiles!tutors_profile_id_fkey ( first_name, last_name, is_active )'),
+  ])
+  if (lessonsRes.error) throw lessonsRes.error
+  if (penaltiesRes.error) throw penaltiesRes.error
+  if (tutorsRes.error) throw tutorsRes.error
+
+  const penaltyLessonIds = new Set<string>()
+  const penaltyByTutor = new Map<string, number>()
+  for (const p of penaltiesRes.data ?? []) {
+    if (p.lesson_id) penaltyLessonIds.add(p.lesson_id)
+    penaltyByTutor.set(p.tutor_id, (penaltyByTutor.get(p.tutor_id) ?? 0) + 1)
+  }
+
+  type LRow = {
+    id: string
+    lesson_date: string
+    start_time: string
+    end_time: string
+    status: Enums<'lesson_status'>
+    tutor_id: string
+    tutor: { profile: { first_name: string; last_name: string } }
+    subject: { name: string; color: string }
+    class: {
+      level: Enums<'student_level'> | null
+      form: Enums<'class_form'> | null
+      student: { profile: { first_name: string; last_name: string } } | null
+      group: { name: string } | null
+    }
+    entry: {
+      status: Enums<'entry_status'>
+      topic: string | null
+      note_for_student: string | null
+      internal_note: string | null
+      published_at: string | null
+      updated_at: string | null
+      homework: { id: string } | null
+    } | null
+  }
+  const rows = (lessonsRes.data ?? []) as unknown as LRow[]
+
+  const entries: AdminJournalEntry[] = rows.map((l) => {
+    const e = l.entry
+    let entryStatus: AdminJournalEntry['entryStatus'] = 'missing'
+    if (e) {
+      entryStatus = e.status === 'draft' || e.status === 'published' || e.status === 'locked' ? e.status : 'missing'
+    }
+    let editedAt: string | null = null
+    if (e?.published_at && e?.updated_at) {
+      const diff = new Date(e.updated_at).getTime() - new Date(e.published_at).getTime()
+      if (diff >= 60_000) editedAt = e.updated_at
+    }
+    return {
+      lessonId: l.id,
+      date: l.lesson_date,
+      startTime: l.start_time.slice(0, 5),
+      endTime: l.end_time.slice(0, 5),
+      tutorId: l.tutor_id,
+      tutorName: `${l.tutor.profile.first_name} ${l.tutor.profile.last_name}`,
+      tutorInitials: getInitials(l.tutor.profile.first_name, l.tutor.profile.last_name),
+      studentLabel: l.class.group
+        ? l.class.group.name
+        : l.class.student
+          ? `${l.class.student.profile.first_name} ${l.class.student.profile.last_name}`
+          : '—',
+      subjectName: l.subject.name,
+      subjectColor: l.subject.color,
+      level: l.class.level,
+      levelLabel: l.class.level ? LEVEL_LABELS[l.class.level] : null,
+      form: l.class.form,
+      status: l.status,
+      entryStatus,
+      topic: e?.topic ?? null,
+      noteForStudent: e?.note_for_student ?? null,
+      internalNote: e?.internal_note ?? null,
+      hasHomework: Boolean(e?.homework),
+      editedAt,
+      hasPenalty: penaltyLessonIds.has(l.id),
+    }
+  })
+
+  type TRow = {
+    profile_id: string
+    profile: { first_name: string; last_name: string; is_active: boolean }
+  }
+  const tutors = ((tutorsRes.data ?? []) as unknown as TRow[])
+    .filter((t) => t.profile.is_active)
+    .map((t) => ({
+      id: t.profile_id,
+      name: `${t.profile.first_name} ${t.profile.last_name}`,
+      penaltyCount: penaltyByTutor.get(t.profile_id) ?? 0,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  return { entries, tutors }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1180,6 +1877,14 @@ export type AdminSettingsData = {
     lastLoginAt: string | null
     isActive: boolean
   }>
+  /** Konta rodziców i uczniów (sekcja „Konta" — podgląd read-only). */
+  userAccounts: Array<{
+    id: string
+    fullName: string
+    email: string | null
+    role: Enums<'user_role'>
+    createdAt: string
+  }>
 }
 
 export async function getAdminSettings(supabase: Supabase): Promise<AdminSettingsData> {
@@ -1205,6 +1910,15 @@ export async function getAdminSettings(supabase: Supabase): Promise<AdminSetting
   if (templates.error) throw templates.error
   if (terms.error) throw terms.error
   if (accounts.error) throw accounts.error
+
+  // Konta rodziców i uczniów (sekcja „Konta" — podgląd read-only z wyszukiwarką).
+  const userAccountsQ = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, email, role, created_at')
+    .in('role', ['parent', 'student'])
+    .order('role')
+    .order('last_name')
+  if (userAccountsQ.error) throw userAccountsQ.error
 
   return {
     center: {
@@ -1278,6 +1992,13 @@ export async function getAdminSettings(supabase: Supabase): Promise<AdminSetting
       role: a.role,
       lastLoginAt: a.last_login_at,
       isActive: a.is_active,
+    })),
+    userAccounts: (userAccountsQ.data ?? []).map((a) => ({
+      id: a.id,
+      fullName: `${a.first_name} ${a.last_name}`,
+      email: a.email,
+      role: a.role,
+      createdAt: a.created_at,
     })),
   }
 }

@@ -2,9 +2,9 @@ import { getCurrentStudentId } from '@/lib/auth/getCurrentStudentId'
 import { CancelLessonOverlay } from '@/lib/components/panel/CancelLessonOverlay'
 import { ContactTeacher } from '@/lib/components/panel/ContactTeacher'
 import { EntryCard } from '@/lib/components/panel/EntryCard'
-import { HomeworkCheckbox } from '@/lib/components/panel/HomeworkCheckbox'
+import { HomeworkSection } from '@/lib/components/panel/HomeworkSection'
 import { LevelBadge, SubjectDot } from '@/lib/components/panel/Badges'
-import { getStudentDashboard, type LessonRow, type HomeworkRow, type MakeupRow } from '@/lib/queries/student'
+import { getStudentDashboard, type LessonRow, type MakeupRow } from '@/lib/queries/student'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { formatLessonDate, formatPolishDate } from '@/lib/utils/date'
 
@@ -16,8 +16,7 @@ export default async function StudentDashboardPage() {
   const data = await getStudentDashboard(supabase, studentId)
 
   const lessonsByDate = groupLessonsByDate(data.upcomingLessons)
-  const pendingHomework = data.homework.filter((h) => !h.isDone)
-  const doneHomework = data.homework.filter((h) => h.isDone).slice(0, 5)
+  const pendingHomeworkCount = data.homework.filter((h) => !h.isDone).length
 
   return (
     <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
@@ -58,34 +57,11 @@ export default async function StudentDashboardPage() {
           <SectionHeader
             icon="📝"
             title="Praca domowa"
-            count={pendingHomework.length}
+            count={pendingHomeworkCount}
             countLabel="do zrobienia"
             countColor="#FFCA28"
           />
-          {pendingHomework.length === 0 ? (
-            <div
-              className="rounded-card bg-surface p-4 text-center text-[13px] font-extrabold"
-              style={{ color: '#22C55E' }}
-            >
-              🎉 Wszystko zrobione!
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {pendingHomework.map((hw) => (
-                <HomeworkPendingCard key={hw.homeworkId} hw={hw} studentId={studentId} />
-              ))}
-            </div>
-          )}
-          {doneHomework.length > 0 && (
-            <div className="mt-3 flex flex-col gap-2">
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-dim">
-                ✓ Zrobione ({doneHomework.length})
-              </div>
-              {doneHomework.map((hw) => (
-                <HomeworkDoneCard key={hw.homeworkId} hw={hw} studentId={studentId} />
-              ))}
-            </div>
-          )}
+          <HomeworkSection homework={data.homework} studentId={studentId} />
         </section>
 
         {/* 3. Notatki z lekcji */}
@@ -94,7 +70,7 @@ export default async function StudentDashboardPage() {
             icon="📖"
             title="Notatki z lekcji"
             count={data.recentEntries.length}
-            link={{ href: '/panel/student/classes', label: 'Wszystkie →' }}
+            link={{ href: '/panel/student/classes?tab=history', label: 'Zobacz wszystkie →' }}
           />
           {data.recentEntries.length === 0 ? (
             <EmptyState text="Brak notatek z lekcji." />
@@ -366,88 +342,6 @@ function UpcomingLessonCard({
           studentId={studentId}
           pending={pendingCancel}
         />
-      </div>
-    </article>
-  )
-}
-
-function HomeworkPendingCard({
-  hw,
-  studentId,
-}: {
-  hw: HomeworkRow
-  studentId: string
-}) {
-  return (
-    <article
-      className="rounded-card p-3"
-      style={{ borderLeft: '3px solid #FFCA28', backgroundColor: '#FFCA2810' }}
-    >
-      <div className="flex items-start gap-3">
-        <HomeworkCheckbox
-          homeworkId={hw.homeworkId}
-          studentId={studentId}
-          initialDone={false}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <SubjectDot color={hw.subjectColor} />
-            <span className="text-[12px] font-extrabold text-primary">{hw.subjectName}</span>
-            {hw.topic && (
-              <span className="truncate text-[11px] text-secondary">• {hw.topic}</span>
-            )}
-          </div>
-          <p className="mt-1 text-[12px] font-semibold" style={{ color: '#FFCA28' }}>
-            {hw.content}
-          </p>
-          <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-secondary">
-            <span>Zadane: {formatPolishDate(hw.lessonDate)}</span>
-            {hw.dueDate && (
-              <span style={{ color: '#F59E0B' }}>Termin: {formatPolishDate(hw.dueDate)}</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </article>
-  )
-}
-
-function HomeworkDoneCard({
-  hw,
-  studentId,
-}: {
-  hw: HomeworkRow
-  studentId: string
-}) {
-  return (
-    <article className="rounded-card bg-surface p-3 opacity-60">
-      <div className="flex items-start gap-3">
-        <HomeworkCheckbox
-          homeworkId={hw.homeworkId}
-          studentId={studentId}
-          initialDone={true}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <SubjectDot color={hw.subjectColor} />
-            <span className="text-[12px] font-extrabold text-primary line-through">
-              {hw.subjectName}
-            </span>
-          </div>
-          <p className="mt-0.5 text-[12px] text-secondary line-through">{hw.content}</p>
-          <div className="mt-1">
-            <span
-              className="rounded-md px-1.5 py-0.5 text-[10px] font-extrabold"
-              style={
-                hw.isVerified
-                  ? { backgroundColor: '#22C55E22', color: '#22C55E' }
-                  : { backgroundColor: '#232840', color: '#9B97AF' }
-              }
-            >
-              {hw.isVerified ? 'Sprawdzona ✓' : 'Niesprawdzona'}
-            </span>
-          </div>
-        </div>
       </div>
     </article>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
@@ -60,6 +60,13 @@ export function LessonEntryForm({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<'published' | 'draft' | null>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(t)
+  }, [toast])
 
   const [topic, setTopic] = useState(initial?.topic ?? '')
   const [noteForStudent, setNoteForStudent] = useState(initial?.noteForStudent ?? '')
@@ -200,6 +207,22 @@ export function LessonEntryForm({
         }
       }
 
+      // 5. Po opublikowaniu wpisu lekcja „bez wpisu" staje się „z wpisem"
+      //    (completed_no_entry → completed) — harmonogram zmieni kolor żółty→zielony.
+      if (status === 'published') {
+        const { error: stErr } = await supabase
+          .from('lessons')
+          .update({ status: 'completed' })
+          .eq('id', lessonId)
+          .in('status', ['completed_no_entry', 'in_progress'])
+        if (stErr) {
+          setError(stErr.message)
+          return
+        }
+      }
+
+      // Feedback + odświeżenie danych server-side (harmonogram, dziennik).
+      setToast(status)
       router.refresh()
       if (onClose) onClose()
     })
@@ -390,6 +413,21 @@ export function LessonEntryForm({
       <p className="mt-2 text-right text-[10px] italic text-dim">
         * Temat i notatka dla ucznia wymagane do opublikowania. Szkic można zapisać bez nich.
       </p>
+
+      {toast && (
+        <div
+          className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 rounded-[12px] px-4 py-3 text-[13px] font-extrabold shadow-xl"
+          style={
+            toast === 'published'
+              ? { backgroundColor: '#22C55E', color: '#fff' }
+              : { backgroundColor: '#FFCA28', color: '#1a1400' }
+          }
+          role="status"
+        >
+          <span aria-hidden>✓</span>
+          {toast === 'published' ? 'Wpis opublikowany' : 'Szkic zapisany'}
+        </div>
+      )}
     </div>
   )
 }

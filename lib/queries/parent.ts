@@ -194,6 +194,22 @@ export type NotificationPrefRow = {
 // Loaders (internal)
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Profile.id pierwszego admina centrum — używane jako odbiorca wiadomości
+ * od rodzica („Wyślij wiadomość do centrum").
+ */
+async function loadAdminProfileId(supabase: Supabase): Promise<string> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('role', 'admin')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single()
+  if (error) throw error
+  return data.id
+}
+
 async function loadParentSummary(supabase: Supabase, parentId: string): Promise<ParentSummary> {
   const { data, error } = await supabase
     .from('parents')
@@ -364,7 +380,13 @@ async function loadLessonsForParent(
   supabase: Supabase,
   childClassMap: Map<string, string[]>,
   childIndex: Map<string, ChildSummary>,
-  options: { from?: string; to?: string; limit?: number; order?: 'asc' | 'desc' } = {},
+  options: {
+    from?: string
+    to?: string
+    limit?: number
+    order?: 'asc' | 'desc'
+    statuses?: Enums<'lesson_status'>[]
+  } = {},
 ): Promise<ParentLessonRow[]> {
   const allClassIds = Array.from(childClassMap.values()).flat()
   if (allClassIds.length === 0) return []
@@ -406,6 +428,9 @@ async function loadLessonsForParent(
 
   if (options.from) query = query.gte('lesson_date', options.from)
   if (options.to) query = query.lte('lesson_date', options.to)
+  if (options.statuses && options.statuses.length > 0) {
+    query = query.in('status', options.statuses)
+  }
   query = query
     .order('lesson_date', { ascending: options.order !== 'desc' })
     .order('start_time', { ascending: options.order !== 'desc' })
@@ -1067,6 +1092,8 @@ export type ParentDashboardData = {
     phone: string
     email: string
     address: string
+    /** Profile.id admina — odbiorca wiadomości z „Wyślij wiadomość do centrum". */
+    adminId: string
   }
 }
 
@@ -1075,11 +1102,12 @@ export async function getParentDashboard(
   parentId: string,
   childFilter: ChildFilter,
 ): Promise<ParentDashboardData> {
-  const [parent, children, payments, center] = await Promise.all([
+  const [parent, children, payments, center, adminId] = await Promise.all([
     loadParentSummary(supabase, parentId),
     loadChildren(supabase, parentId),
     loadPaymentsForParent(supabase, parentId, new Map()),
     supabase.from('center_settings').select('name, phone, email, address').eq('id', 1).single(),
+    loadAdminProfileId(supabase),
   ])
   if (center.error) throw center.error
 
@@ -1138,6 +1166,7 @@ export async function getParentDashboard(
       phone: center.data!.phone,
       email: center.data!.email,
       address: center.data!.address,
+      adminId,
     },
   }
 }
@@ -1172,7 +1201,13 @@ export async function getParentClasses(
   const [schedule, exceptions, history, makeup] = await Promise.all([
     loadWeeklyScheduleForChildren(supabase, childClassMap, childIndex),
     loadExceptionsForChildren(supabase, childClassMap, childIndex),
-    loadLessonsForParent(supabase, childClassMap, childIndex, { limit: 60, order: 'desc' }),
+    loadLessonsForParent(supabase, childClassMap, childIndex, {
+      limit: 60,
+      order: 'desc',
+      // Tab „Historia" pokazuje TYLKO zrealizowane (completed / completed_no_entry)
+      // i odwołane (cancelled). Zaplanowane i no_show są w innych widokach.
+      statuses: ['completed', 'completed_no_entry', 'cancelled'],
+    }),
     loadMakeupForParent(supabase, childClassMap, childIndex),
   ])
 
@@ -1337,6 +1372,8 @@ export type ParentProfileData = {
     address: string
     phone: string
     email: string
+    /** Profile.id admina — odbiorca wiadomości z „Wyślij wiadomość do centrum". */
+    adminId: string
   }
 }
 
@@ -1357,7 +1394,7 @@ export async function getParentProfile(
   supabase: Supabase,
   parentId: string,
 ): Promise<ParentProfileData> {
-  const [parent, children, contract, center, prefs] = await Promise.all([
+  const [parent, children, contract, center, prefs, adminId] = await Promise.all([
     loadParentSummary(supabase, parentId),
     loadChildren(supabase, parentId),
     supabase.from('contract_terms').select('*').eq('id', 1).single(),
@@ -1366,6 +1403,7 @@ export async function getParentProfile(
       .from('notification_preferences')
       .select('notif_type, email_enabled, push_enabled')
       .eq('profile_id', parentId),
+    loadAdminProfileId(supabase),
   ])
   if (contract.error) throw contract.error
   if (center.error) throw center.error
@@ -1473,6 +1511,7 @@ export async function getParentProfile(
       address: center.data!.address,
       phone: center.data!.phone,
       email: center.data!.email,
+      adminId,
     },
   }
 }

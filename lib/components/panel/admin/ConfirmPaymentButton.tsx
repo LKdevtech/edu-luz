@@ -9,6 +9,10 @@ type ConfirmPaymentButtonProps = {
   paymentId: string
   totalAmount: number
   dueDate: string
+  /** Etykieta przycisku. Domyślnie "✓ Potwierdź wpłatę". */
+  label?: string
+  /** Wariant "inline" — pełna szerokość, styl pigułki z mockupu płatności. */
+  variant?: 'default' | 'inline'
 }
 
 /**
@@ -22,6 +26,8 @@ export function ConfirmPaymentButton({
   paymentId,
   totalAmount,
   dueDate,
+  label,
+  variant = 'default',
 }: ConfirmPaymentButtonProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -52,6 +58,38 @@ export function ConfirmPaymentButton({
     })
   }
 
+  const defaultLabel = label ?? '✓ Potwierdź wpłatę'
+
+  if (variant === 'inline') {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={confirm}
+          disabled={isPending}
+          className="w-full rounded-[7px] px-2 py-[7px] text-[10px] font-bold transition-colors hover:text-white disabled:opacity-50"
+          style={{ backgroundColor: '#22C55E12', color: '#22C55E' }}
+          onMouseEnter={(e) => {
+            if (isPending) return
+            e.currentTarget.style.backgroundColor = '#22C55E'
+            e.currentTarget.style.color = '#FFFFFF'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#22C55E12'
+            e.currentTarget.style.color = '#22C55E'
+          }}
+        >
+          {isPending ? 'Zapisywanie…' : defaultLabel}
+        </button>
+        {error && (
+          <span className="text-[10px] font-bold" style={{ color: '#EF4444' }}>
+            {error}
+          </span>
+        )}
+      </>
+    )
+  }
+
   return (
     <>
       <button
@@ -61,7 +99,7 @@ export function ConfirmPaymentButton({
         className="rounded-[8px] px-3 py-1.5 text-[11px] font-extrabold text-white hover:brightness-110 disabled:opacity-50"
         style={{ backgroundColor: '#22C55E' }}
       >
-        {isPending ? 'Zapisywanie…' : '✓ Potwierdź wpłatę'}
+        {isPending ? 'Zapisywanie…' : defaultLabel}
       </button>
       {error && (
         <span className="text-[10px] font-bold" style={{ color: '#EF4444' }}>

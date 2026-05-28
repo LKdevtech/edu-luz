@@ -35,22 +35,22 @@ insert into auth.users (
 )
 values
   ('99999999-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'admin@eduluz.pl', crypt('admin1234', gen_salt('bf')), now(), now(), now(),
+   'admin@edu-luz.com', crypt('admin1234', gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'tomasz.kowalski@eduluz.pl', crypt('tutor1234', gen_salt('bf')), now(), now(), now(),
+   'tomasz.kowalski@edu-luz.com', crypt('tutor1234', gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'maria.zielinska@eduluz.pl', crypt('tutor1234', gen_salt('bf')), now(), now(), now(),
+   'maria.zielinska@edu-luz.com', crypt('tutor1234', gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
    'monika.nowak@gmail.com', crypt('parent1234', gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'kacper.nowak@eduluz.pl', crypt('student1234', gen_salt('bf')), now(), now(), now(),
+   'kacper.nowak@edu-luz.com', crypt('student1234', gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'ola.nowak@eduluz.pl', crypt('student1234', gen_salt('bf')), now(), now(), now(),
+   'ola.nowak@edu-luz.com', crypt('student1234', gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb)
 on conflict (id) do nothing;
 
@@ -58,22 +58,22 @@ on conflict (id) do nothing;
 -- 2. Profiles
 -- ============================================================================
 insert into profiles (id, role, first_name, last_name, email, phone) values
-  ('99999999-0000-0000-0000-000000000001', 'admin',  'Kacper', 'Luchowski',      'admin@eduluz.pl',         '+48 123 456 789'),
-  ('99999999-0000-0000-0000-000000000010', 'tutor',  'Tomasz', 'Kowalski',       'tomasz.kowalski@eduluz.pl', '+48 600 000 010'),
-  ('99999999-0000-0000-0000-000000000011', 'tutor',  'Maria',  'Zielińska',      'maria.zielinska@eduluz.pl', '+48 600 000 011'),
-  ('99999999-0000-0000-0000-000000000020', 'parent', 'Monika', 'Nowak',          'monika.nowak@gmail.com',  '+48 602 345 678'),
-  ('99999999-0000-0000-0000-000000000030', 'student','Kacper', 'Nowak',          null,                       null),
-  ('99999999-0000-0000-0000-000000000031', 'student','Ola',    'Nowak',          null,                       null);
+  ('99999999-0000-0000-0000-000000000001', 'admin',  'Kacper', 'Luchowski',      'admin@edu-luz.com',           '+48 604 607 934'),
+  ('99999999-0000-0000-0000-000000000010', 'tutor',  'Tomasz', 'Kowalski',       'tomasz.kowalski@edu-luz.com', '+48 600 000 010'),
+  ('99999999-0000-0000-0000-000000000011', 'tutor',  'Maria',  'Zielińska',      'maria.zielinska@edu-luz.com', '+48 600 000 011'),
+  ('99999999-0000-0000-0000-000000000020', 'parent', 'Monika', 'Nowak',          'monika.nowak@gmail.com',      '+48 602 345 678'),
+  ('99999999-0000-0000-0000-000000000030', 'student','Kacper', 'Nowak',          null,                          null),
+  ('99999999-0000-0000-0000-000000000031', 'student','Ola',    'Nowak',          null,                          null);
 
 -- ============================================================================
 -- 3. Centrum + godziny + warunki + powiadomienia
 -- ============================================================================
 insert into center_settings (id, name, full_name, address, phone, email, nip, bank_account, bank_name) values
-  (1, 'EDU LUZ', 'EDU LUZ Sp. z o.o.',
-   'ul. Szkolna 8, 97-200 Tomaszów Mazowiecki',
-   '+48 123 456 789',
-   'kontakt@eduluz.pl',
-   '7732536321',
+  (1, 'EDU LUZ', 'LK&P Services Sp. z o.o.',
+   'TOMAX lok. 209C, ul. P.O.W. 17, 97-200 Tomaszów Mazowiecki',
+   '+48 604 607 934',
+   'kontakt@edu-luz.com',
+   '7732515612',
    'PL 12 3456 7890 1234 5678 9012 3456',
    'PKO BP');
 

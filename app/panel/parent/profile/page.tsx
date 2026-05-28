@@ -1,5 +1,6 @@
 import { getCurrentParentId } from '@/lib/auth/getCurrentParentId'
 import { LevelBadge, SubjectDot } from '@/lib/components/panel/Badges'
+import { ContactCenter } from '@/lib/components/panel/ContactCenter'
 import { ParentNotificationRow } from '@/lib/components/panel/ParentNotificationRow'
 import {
   getParentProfile,
@@ -219,12 +220,7 @@ export default async function ParentProfilePage() {
               <span className="text-primary">{data.center.email}</span>
             </div>
           </div>
-          <button
-            type="button"
-            className="mt-3 w-full rounded-[8px] bg-[rgba(59,143,240,0.12)] px-3 py-2 text-[12px] font-extrabold text-link hover:bg-[rgba(59,143,240,0.2)]"
-          >
-            💬 Wyślij wiadomość
-          </button>
+          <ContactCenter parentId={parentId} adminId={data.center.adminId} />
         </aside>
 
         <aside className="rounded-card bg-alt p-4">

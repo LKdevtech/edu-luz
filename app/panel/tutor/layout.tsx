@@ -27,11 +27,10 @@ export default async function TutorPanelLayout({ children }: { children: ReactNo
   const navItems: PanelNavItem[] = [
     { href: '/panel/tutor/dashboard', label: 'Dashboard', icon: '📊' },
     { href: '/panel/tutor/schedule', label: 'Harmonogram', icon: '📅' },
-    { href: '/panel/tutor/day', label: 'Widok dzienny', icon: '🗓️' },
-    { href: '/panel/tutor/lessons', label: 'Lekcje i wpisy', icon: '📝' },
+    { href: '/panel/tutor/students', label: 'Uczniowie', icon: '👥' },
+    { href: '/panel/tutor/lessons', label: 'Dziennik wpisów', icon: '📝' },
     { href: '/panel/tutor/makeup', label: 'Odrabianie', icon: '🔄', badgeCount: makeupCount },
     { href: '/panel/tutor/availability', label: 'Dostępność', icon: '🕐' },
-    { href: '/panel/tutor/students', label: 'Moi uczniowie', icon: '👥' },
   ]
 
   return (
