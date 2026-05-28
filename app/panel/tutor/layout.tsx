@@ -41,6 +41,7 @@ export default async function TutorPanelLayout({ children }: { children: ReactNo
       userName={firstName}
       userInitials={getInitials(firstName, lastName)}
       userAvatarColor={getAvatarColor(`${firstName} ${lastName}`)}
+      userId={tutorId}
     >
       {children}
     </PanelLayout>

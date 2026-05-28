@@ -42,6 +42,7 @@ export default async function AdminPanelLayout({ children }: { children: ReactNo
       userName={firstName}
       userInitials={getInitials(firstName, lastName)}
       userAvatarColor={getAvatarColor(`${firstName} ${lastName}`)}
+      userId={adminId}
     >
       {children}
     </PanelLayout>

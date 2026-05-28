@@ -1,11 +1,25 @@
+import { NotificationBell } from './NotificationBell'
+import type { NotificationRow } from '@/lib/queries/notifications'
+
 type TopbarProps = {
   greeting: string
   userName: string
   userInitials: string
   userAvatarColor: string
+  userId: string
+  unreadCount: number
+  notifications: NotificationRow[]
 }
 
-export function Topbar({ greeting, userName, userInitials, userAvatarColor }: TopbarProps) {
+export function Topbar({
+  greeting,
+  userName,
+  userInitials,
+  userAvatarColor,
+  userId,
+  unreadCount,
+  notifications,
+}: TopbarProps) {
   const today = new Date().toLocaleDateString('pl-PL', {
     weekday: 'long',
     day: 'numeric',
@@ -21,13 +35,7 @@ export function Topbar({ greeting, userName, userInitials, userAvatarColor }: To
         <span className="text-[11px] text-dim">{today}</span>
       </div>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          aria-label="Powiadomienia"
-          className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-surface text-[15px] text-secondary hover:bg-surface-hover hover:text-primary"
-        >
-          🔔
-        </button>
+        <NotificationBell userId={userId} unreadCount={unreadCount} notifications={notifications} />
         <div
           className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-extrabold"
           style={{ backgroundColor: `${userAvatarColor}22`, color: userAvatarColor }}

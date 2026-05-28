@@ -38,6 +38,7 @@ export default async function StudentPanelLayout({ children }: { children: React
       userName={firstName}
       userInitials={getInitials(firstName, lastName)}
       userAvatarColor={getAvatarColor(`${firstName} ${lastName}`)}
+      userId={studentId}
     >
       {children}
     </PanelLayout>

@@ -44,6 +44,7 @@ export default async function ParentPanelLayout({ children }: { children: ReactN
       userName={firstName}
       userInitials={getInitials(firstName, lastName)}
       userAvatarColor={getAvatarColor(`${firstName} ${lastName}`)}
+      userId={parentId}
     >
       {children}
     </PanelLayout>
