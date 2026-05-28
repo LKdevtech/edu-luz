@@ -39,3 +39,7 @@ next-env.d.ts
 .claude/settings.local.json
 
 .vercel
+
+# supabase (lokalna pamięć podręczna CLI)
+supabase/.branches/
+supabase/.temp/
