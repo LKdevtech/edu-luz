@@ -453,7 +453,6 @@ function DayView({
   avail,
   todayIdx,
   nowDecimal,
-  dayHeaderLabel,
   onSelect,
 }: {
   lessons: ScheduleLesson[]
@@ -1219,10 +1218,40 @@ function DetailPanel({
   const st = STATUS_META[lesson.status]
   const col = SUBJECT_COLOR[lesson.subjectName] ?? T.textDim
 
-  const actions: Array<{ label: string; color: string }> = []
+  const router = useRouter()
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function submitCancel() {
+    setBusy(true)
+    setErr(null)
+    try {
+      const res = await fetch('/api/admin/cancel-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId: lesson.id, reason }),
+      })
+      const json: { error?: string; report?: unknown } = await res.json()
+      if (!res.ok || !json.report) {
+        setErr(json.error ?? `Błąd ${res.status}.`)
+        return
+      }
+      setCancelOpen(false)
+      router.refresh()
+      onClose()
+    } catch {
+      setErr('Błąd połączenia z serwerem.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const actions: Array<{ label: string; color: string; onClick?: () => void }> = []
   if (lesson.status === 'planned') {
     actions.push({ label: 'Edytuj lekcję', color: T.primary })
-    actions.push({ label: 'Odwołaj lekcję', color: T.danger })
+    actions.push({ label: 'Odwołaj lekcję', color: T.danger, onClick: () => setCancelOpen(true) })
     actions.push({ label: 'Zmień salę', color: T.tertiary })
   }
   if (lesson.status === 'in_progress') actions.push({ label: 'Zmień salę', color: T.tertiary })
@@ -1295,6 +1324,7 @@ function DetailPanel({
             {actions.map((a, i) => (
               <button
                 key={i}
+                onClick={a.onClick}
                 style={{
                   width: '100%',
                   padding: '8px',
@@ -1323,6 +1353,104 @@ function DetailPanel({
           </div>
         )}
       </div>
+
+      {cancelOpen && (
+        <div
+          onClick={() => !busy && setCancelOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 200,
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 380,
+              background: T.bgAlt,
+              border: '1px solid ' + T.cardBorder,
+              borderRadius: 14,
+              padding: 18,
+              fontFamily: 'Nunito, sans-serif',
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 900, color: T.text, marginBottom: 4 }}>
+              Odwołaj lekcję
+            </div>
+            <div style={{ fontSize: 11, color: T.textDim, marginBottom: 12 }}>
+              {lesson.subjectName} · {lesson.studentLabel} · {fmtRange(lesson.start, lesson.end)}
+            </div>
+            <label style={{ fontSize: 10, fontWeight: 700, color: T.textDim, textTransform: 'uppercase' }}>
+              Powód odwołania
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder="np. choroba korepetytora, awaria sali…"
+              style={{
+                width: '100%',
+                marginTop: 6,
+                padding: 10,
+                fontSize: 12,
+                fontFamily: 'inherit',
+                color: T.text,
+                background: T.bg,
+                border: '1px solid ' + T.cardBorder,
+                borderRadius: 10,
+                resize: 'vertical',
+                outline: 'none',
+              }}
+            />
+            {err && (
+              <div style={{ marginTop: 8, fontSize: 11, fontWeight: 700, color: T.danger }}>{err}</div>
+            )}
+            <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                onClick={() => setCancelOpen(false)}
+                disabled={busy}
+                style={{
+                  padding: '8px 14px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  fontFamily: 'inherit',
+                  borderRadius: 8,
+                  border: '1px solid ' + T.cardBorder,
+                  background: 'transparent',
+                  color: T.textMuted,
+                  cursor: busy ? 'wait' : 'pointer',
+                }}
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={submitCancel}
+                disabled={busy}
+                style={{
+                  padding: '8px 14px',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  fontFamily: 'inherit',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: T.danger,
+                  color: '#fff',
+                  cursor: busy ? 'wait' : 'pointer',
+                  opacity: busy ? 0.6 : 1,
+                }}
+              >
+                {busy ? 'Odwoływanie…' : 'Odwołaj i powiadom'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
