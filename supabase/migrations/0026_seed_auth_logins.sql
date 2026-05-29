@@ -11,6 +11,10 @@
 -- Ustawiamy hasło (bcrypt), potwierdzony email i ZERUJEMY tokeny (GoTrue
 -- odrzuca login gdy pola tokenów są NULL). Tworzymy też wpis w auth.identities
 -- dla providera 'email' — wymagany przez signInWithPassword.
+--
+-- ROLA idzie do raw_app_meta_data (niemodyfikowalne przez użytkownika), przez
+-- merge `||` żeby zachować {provider, providers}. Imię/nazwisko zostają w
+-- raw_user_meta_data (dane profilowe).
 
 -- ── auth.users: email + hasło + tokeny + metadata roli ──
 update auth.users set
@@ -18,7 +22,8 @@ update auth.users set
   encrypted_password = crypt('admin123', gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
-  raw_user_meta_data = jsonb_build_object('role', 'admin', 'first_name', 'Kacper', 'last_name', 'Luchowski'),
+  raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'admin'),
+  raw_user_meta_data = jsonb_build_object('first_name', 'Kacper', 'last_name', 'Luchowski'),
   updated_at = now()
 where id = '99999999-0000-0000-0000-000000000001';
 
@@ -27,7 +32,8 @@ update auth.users set
   encrypted_password = crypt('tutor123', gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
-  raw_user_meta_data = jsonb_build_object('role', 'tutor', 'first_name', 'Tomasz', 'last_name', 'Kowalski'),
+  raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'tutor'),
+  raw_user_meta_data = jsonb_build_object('first_name', 'Tomasz', 'last_name', 'Kowalski'),
   updated_at = now()
 where id = '99999999-0000-0000-0000-000000000010';
 
@@ -36,7 +42,8 @@ update auth.users set
   encrypted_password = crypt('rodzic123', gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
-  raw_user_meta_data = jsonb_build_object('role', 'parent', 'first_name', 'Monika', 'last_name', 'Nowak'),
+  raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'parent'),
+  raw_user_meta_data = jsonb_build_object('first_name', 'Monika', 'last_name', 'Nowak'),
   updated_at = now()
 where id = '99999999-0000-0000-0000-000000000020';
 
@@ -45,7 +52,8 @@ update auth.users set
   encrypted_password = crypt('uczen123', gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
-  raw_user_meta_data = jsonb_build_object('role', 'student', 'first_name', 'Kacper', 'last_name', 'Nowak'),
+  raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'student'),
+  raw_user_meta_data = jsonb_build_object('first_name', 'Kacper', 'last_name', 'Nowak'),
   updated_at = now()
 where id = '99999999-0000-0000-0000-000000000030';
 

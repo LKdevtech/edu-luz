@@ -2,7 +2,7 @@
 -- EDU LUZ — Row Level Security na wszystkich tabelach + polityki per rola.
 --
 -- Model:
---   • Rola czytana z JWT: auth.jwt() -> 'user_metadata' ->> 'role'  (bez zapytań
+--   • Rola czytana z JWT: auth.jwt() -> 'app_metadata' ->> 'role'  (bez zapytań
 --     do profiles → brak rekurencji w politykach).
 --   • auth.uid() = profiles.id = {tutors,parents,students}.profile_id.
 --   • Admin → pełen dostęp do wszystkiego (catch-all is_admin()).
@@ -12,19 +12,18 @@
 --     migracji → omijają RLS. Klient aplikacji używa klucza anon + sesji JWT
 --     (rola `authenticated`) → podlega politykom.
 --
--- UWAGA bezpieczeństwa: user_metadata jest edytowalne przez użytkownika
--- (auth.updateUser). Dla twardej autoryzacji rolę należałoby trzymać w
--- app_metadata (niemodyfikowalne przez usera) lub w SECURITY DEFINER funkcji
--- czytającej profiles. Tu używamy user_metadata zgodnie z przyjętą architekturą.
+-- Rola w app_metadata jest ustawiana wyłącznie po stronie serwera (admin API /
+-- SQL) — użytkownik NIE może jej zmienić przez auth.updateUser (to dotyczy tylko
+-- user_metadata). Dzięki temu autoryzacja oparta na app_metadata.role jest twarda.
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 1. Helpery
 -- ════════════════════════════════════════════════════════════════════════════
 
--- Rola z JWT. STABLE, nie odpytuje tabel.
+-- Rola z JWT (app_metadata). STABLE, nie odpytuje tabel.
 create or replace function public.auth_role()
 returns text language sql stable as $$
-  select nullif(auth.jwt() -> 'user_metadata' ->> 'role', '')
+  select nullif(auth.jwt() -> 'app_metadata' ->> 'role', '')
 $$;
 
 create or replace function public.is_admin()

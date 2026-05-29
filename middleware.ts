@@ -61,10 +61,10 @@ export async function middleware(request: NextRequest) {
     return res
   }
 
-  // Rola: najpierw z user_metadata (zero zapytań do bazy), potem fallback
-  // do tabeli profiles dla kont bez roli w metadanych.
+  // Rola: najpierw z app_metadata (zero zapytań do bazy; niemodyfikowalne przez
+  // użytkownika), potem fallback do tabeli profiles dla kont bez roli w JWT.
   async function resolveRole(): Promise<PanelRole | undefined> {
-    const metaRole = user?.user_metadata?.role
+    const metaRole = user?.app_metadata?.role
     if (isPanelRole(metaRole)) return metaRole
     if (!user) return undefined
     const { data } = await supabase

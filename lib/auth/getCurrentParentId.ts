@@ -15,12 +15,7 @@ export async function getCurrentParentId(): Promise<string> {
   } = await supabase.auth.getUser()
 
   if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    if (profile?.role === 'parent') {
+    if (user.app_metadata?.role === 'parent') {
       return user.id
     }
     throw new Error('Zalogowany użytkownik nie ma roli rodzica.')

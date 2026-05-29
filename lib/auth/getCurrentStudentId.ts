@@ -15,12 +15,7 @@ export async function getCurrentStudentId(): Promise<string> {
   } = await supabase.auth.getUser()
 
   if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    if (profile?.role === 'student') {
+    if (user.app_metadata?.role === 'student') {
       return user.id
     }
     throw new Error('Zalogowany użytkownik nie ma roli ucznia.')
