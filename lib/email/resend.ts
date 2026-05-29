@@ -6,9 +6,10 @@ import { Resend } from 'resend'
 // etapy (przypomnienia płatności, odwołania lekcji, powiadomienia admina) będą
 // wołać te helpery z Server Actions / cron jobów.
 
-// Instancja Resend z klucza środowiskowego. Gdy klucz nie jest ustawiony,
-// `sendEmail` zwróci czytelny błąd zamiast próbować strzelać do API.
-export const resend = new Resend(process.env.RESEND_API_KEY)
+// Instancja Resend z klucza środowiskowego. Konstruktor Resend RZUCA przy braku
+// klucza, więc gdy go nie ma podajemy placeholder — `sendEmail` i tak najpierw
+// sprawdza obecność RESEND_API_KEY i zwraca czytelny błąd, nie wysyłając nic.
+export const resend = new Resend(process.env.RESEND_API_KEY ?? 'RESEND_API_KEY_NOT_SET')
 
 // Nadawca — konfigurowalny z env, z sensownym domyślnym (zweryfikowana domena).
 const FROM_EMAIL = process.env.EMAIL_FROM ?? 'EDU LUZ <noreply@edu-luz.com>'

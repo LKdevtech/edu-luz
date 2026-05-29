@@ -67,12 +67,14 @@ function AlertCard({ alert, adminId }: { alert: AdminAlert; adminId: string }) {
   const [expanded, setExpanded] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  // absence: zatwierdź nieobecność → odwołane lekcje
+  // absence: zatwierdź nieobecność → auto-odwołanie lekcji + powiadomienia
   function approveAbsence() {
     const absenceId = alert.absenceId
     if (!absenceId) return
     setError(null)
+    setNotice(null)
     startTransition(async () => {
       const supabase = createSupabaseBrowserClient()
       const { error: updErr } = await supabase
@@ -83,6 +85,31 @@ function AlertCard({ alert, adminId }: { alert: AdminAlert; adminId: string }) {
         setError(updErr.message)
         return
       }
+
+      // Auto-odwołanie lekcji objętych nieobecnością (backend + powiadomienia/maile).
+      try {
+        const res = await fetch('/api/admin/handle-absence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ absenceId }),
+        })
+        const json: {
+          error?: string
+          report?: { lessonsCancelled: number; notificationsCreated: number; emailsSent: number }
+        } = await res.json()
+        if (!res.ok || !json.report) {
+          setError(json.error ?? `Błąd ${res.status} przy odwoływaniu lekcji.`)
+          return
+        }
+        const r = json.report
+        setNotice(
+          `Odwołano ${r.lessonsCancelled} lekcji · ${r.notificationsCreated} powiadomień · ${r.emailsSent} maili.`,
+        )
+      } catch {
+        setError('Nieobecność zatwierdzona, ale auto-odwołanie lekcji nie powiodło się.')
+        return
+      }
+
       router.refresh()
     })
   }
@@ -268,6 +295,11 @@ function AlertCard({ alert, adminId }: { alert: AdminAlert; adminId: string }) {
             {error && (
               <span className="text-[10px] font-bold" style={{ color: '#EF4444' }}>
                 {error}
+              </span>
+            )}
+            {notice && (
+              <span className="text-[10px] font-bold" style={{ color: '#22C55E' }}>
+                {notice}
               </span>
             )}
           </div>

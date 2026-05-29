@@ -2,6 +2,7 @@ import { getCurrentAdminId } from '@/lib/auth/getCurrentAdminId'
 import { AdminAlerts } from '@/lib/components/panel/admin/AdminAlerts'
 import { AdminPendingPayments } from '@/lib/components/panel/admin/AdminPendingPayments'
 import { AdminQuickActions } from '@/lib/components/panel/admin/AdminQuickActions'
+import { GenerateLessonsButton } from '@/lib/components/panel/admin/GenerateLessonsButton'
 import {
   getAdminDashboard,
   getAdminStudents,
@@ -141,6 +142,10 @@ export default async function AdminDashboardPage() {
               students={studentsForActions}
               parents={studentsData.parents}
             />
+          </Section>
+
+          <Section icon="⚙️" title="Operacje">
+            <GenerateLessonsButton />
           </Section>
         </div>
       </div>
