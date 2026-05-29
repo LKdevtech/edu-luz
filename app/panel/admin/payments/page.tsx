@@ -66,6 +66,8 @@ function toBoardRow(p: AdminPaymentRow): AdminPaymentBoardRow {
     }))
   return {
     paymentId: p.paymentId,
+    parentId: p.parentId,
+    remindersDisabled: p.remindersDisabled,
     parentName: p.parentName,
     parentInitials: p.parentInitials,
     parentColor: p.parentColor,

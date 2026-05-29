@@ -1,8 +1,10 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 import { ConfirmPaymentButton } from '@/lib/components/panel/admin/ConfirmPaymentButton'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 // ════════════════════════════════════════════════════════════════════════════
 // Tokeny (inline hex — zgodne z mockupem płatności)
@@ -44,6 +46,8 @@ export type AdminPaymentLine = {
 /** Serializowalny model wiersza płatności (przekazywany z serwera do klienta). */
 export type AdminPaymentBoardRow = {
   paymentId: string
+  parentId: string
+  remindersDisabled: boolean
   parentName: string
   parentInitials: string
   parentColor: string
@@ -114,15 +118,69 @@ function PaymentRow({
   year,
   expanded,
   onToggle,
+  onNotice,
+  onChanged,
 }: {
   p: AdminPaymentBoardRow
   year: number
   expanded: boolean
   onToggle: () => void
+  onNotice: (ok: boolean, text: string) => void
+  onChanged: () => void
 }) {
   const [hover, setHover] = useState(false)
+  const [rowBusy, setRowBusy] = useState(false)
   const sc = statusColor(p.status)
   const isUnpaid = p.status === 'pending' || p.status === 'overdue'
+
+  async function sendOne() {
+    setRowBusy(true)
+    try {
+      const res = await fetch('/api/admin/send-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: p.paymentId }),
+      })
+      const json: { error?: string; report?: { status: string; message: string } } =
+        await res.json()
+      if (!res.ok || !json.report) {
+        onNotice(false, json.error ?? `Błąd ${res.status}.`)
+      } else {
+        const ok = json.report.status === 'sent'
+        onNotice(ok, `${p.parentName}: ${json.report.message}`)
+        onChanged()
+      }
+    } catch {
+      onNotice(false, 'Błąd połączenia z serwerem.')
+    } finally {
+      setRowBusy(false)
+    }
+  }
+
+  async function toggleDisabled() {
+    setRowBusy(true)
+    const next = !p.remindersDisabled
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const { error } = await supabase
+        .from('parents')
+        .update({ reminders_disabled: next })
+        .eq('profile_id', p.parentId)
+      if (error) {
+        onNotice(false, error.message)
+      } else {
+        onNotice(
+          true,
+          next
+            ? `Wyłączono przypomnienia dla: ${p.parentName}.`
+            : `Włączono przypomnienia dla: ${p.parentName}.`,
+        )
+        onChanged()
+      }
+    } finally {
+      setRowBusy(false)
+    }
+  }
 
   return (
     <div
@@ -286,7 +344,14 @@ function PaymentRow({
                     variant="inline"
                   />
                 )}
-                {isUnpaid && <ActionButton label="Wyślij przypomnienie" color={T.tertiary} />}
+                {isUnpaid && (
+                  <ActionButton
+                    label={rowBusy ? 'Wysyłanie…' : 'Wyślij przypomnienie'}
+                    color={T.tertiary}
+                    onClick={sendOne}
+                    disabled={rowBusy}
+                  />
+                )}
                 <ActionButton label="Historia rozliczeń" color={T.primary} />
               </div>
 
@@ -310,6 +375,28 @@ function PaymentRow({
                     </label>
                   ))}
                 </div>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: rowBusy ? 'wait' : 'pointer',
+                    marginTop: 8,
+                    paddingTop: 8,
+                    borderTop: `1px solid ${T.cardBorder}`,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={p.remindersDisabled}
+                    disabled={rowBusy}
+                    onChange={toggleDisabled}
+                    style={{ accentColor: T.danger }}
+                  />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: T.textMuted }}>
+                    Nie wysyłaj przypomnień temu rodzicowi
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -391,10 +478,22 @@ function PaymentRow({
   )
 }
 
-function ActionButton({ label, color }: { label: string; color: string }) {
+function ActionButton({
+  label,
+  color,
+  onClick,
+  disabled,
+}: {
+  label: string
+  color: string
+  onClick?: () => void
+  disabled?: boolean
+}) {
   return (
     <button
       type="button"
+      onClick={onClick}
+      disabled={disabled}
       style={{
         width: '100%',
         padding: '7px',
@@ -402,12 +501,14 @@ function ActionButton({ label, color }: { label: string; color: string }) {
         fontWeight: 700,
         borderRadius: 7,
         border: 'none',
-        cursor: 'pointer',
+        cursor: disabled ? 'wait' : 'pointer',
         background: `${color}12`,
         color,
+        opacity: disabled ? 0.6 : 1,
         transition: 'all 0.12s',
       }}
       onMouseEnter={(e) => {
+        if (disabled) return
         e.currentTarget.style.background = color
         e.currentTarget.style.color = '#fff'
       }}
@@ -451,9 +552,38 @@ export function AdminPaymentsBoard({
   rows: AdminPaymentBoardRow[]
   year: number
 }) {
+  const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<FilterKey>('all')
   const [search, setSearch] = useState('')
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null)
+  const [bulkBusy, setBulkBusy] = useState(false)
+
+  async function sendBulk() {
+    setBulkBusy(true)
+    setNotice(null)
+    try {
+      const res = await fetch('/api/admin/send-reminders', { method: 'POST' })
+      const json: {
+        error?: string
+        report?: { sent: number; emailsSent: number; skippedDisabled: number; skippedRecent: number; errors: number }
+      } = await res.json()
+      if (!res.ok || !json.report) {
+        setNotice({ ok: false, text: json.error ?? `Błąd ${res.status}.` })
+      } else {
+        const r = json.report
+        setNotice({
+          ok: true,
+          text: `Wysłano ${r.sent} (maile: ${r.emailsSent}). Pominięto: ${r.skippedDisabled} wyłączonych, ${r.skippedRecent} niedawnych. Błędy: ${r.errors}.`,
+        })
+        router.refresh()
+      }
+    } catch {
+      setNotice({ ok: false, text: 'Błąd połączenia z serwerem.' })
+    } finally {
+      setBulkBusy(false)
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -518,6 +648,8 @@ export function AdminPaymentsBoard({
         <div style={{ flex: 1 }} />
         <button
           type="button"
+          onClick={sendBulk}
+          disabled={bulkBusy}
           style={{
             fontSize: 10,
             fontWeight: 700,
@@ -525,15 +657,17 @@ export function AdminPaymentsBoard({
             padding: '6px 14px',
             borderRadius: 8,
             border: 'none',
-            cursor: 'pointer',
+            cursor: bulkBusy ? 'wait' : 'pointer',
             background: T.tertiary,
             color: T.bg,
+            opacity: bulkBusy ? 0.6 : 1,
           }}
         >
-          Wyślij przypomnienia
+          {bulkBusy ? 'Wysyłanie…' : 'Wyślij przypomnienia'}
         </button>
         <button
           type="button"
+          onClick={() => router.push('/panel/admin/settings')}
           style={{
             fontSize: 10,
             fontWeight: 700,
@@ -549,6 +683,22 @@ export function AdminPaymentsBoard({
           ⚙ Ustawienia przypomnień
         </button>
       </div>
+
+      {notice && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: '8px 14px',
+            borderRadius: 8,
+            fontSize: 11,
+            fontWeight: 600,
+            background: notice.ok ? `${T.success}18` : `${T.danger}18`,
+            color: notice.ok ? T.success : T.danger,
+          }}
+        >
+          {notice.text}
+        </div>
+      )}
 
       {/* Legenda historii wpłat */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 12, fontSize: 9, color: T.textDim, flexWrap: 'wrap' }}>
@@ -582,6 +732,8 @@ export function AdminPaymentsBoard({
             year={year}
             expanded={expandedId === p.paymentId}
             onToggle={() => setExpandedId(expandedId === p.paymentId ? null : p.paymentId)}
+            onNotice={(ok, text) => setNotice({ ok, text })}
+            onChanged={() => router.refresh()}
           />
         ))}
         {filtered.length === 0 && (

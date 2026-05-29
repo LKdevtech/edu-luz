@@ -1107,6 +1107,7 @@ export type Database = {
           last_overdue_at: string | null
           late_count: number
           profile_id: string
+          reminders_disabled: boolean
         }
         Insert: {
           address?: string | null
@@ -1114,6 +1115,7 @@ export type Database = {
           last_overdue_at?: string | null
           late_count?: number
           profile_id: string
+          reminders_disabled?: boolean
         }
         Update: {
           address?: string | null
@@ -1121,6 +1123,7 @@ export type Database = {
           last_overdue_at?: string | null
           late_count?: number
           profile_id?: string
+          reminders_disabled?: boolean
         }
         Relationships: [
           {
@@ -1277,6 +1280,7 @@ export type Database = {
           paid_at: string | null
           paid_on_time: boolean | null
           parent_id: string
+          reminder_sent_at: string | null
           status: Database["public"]["Enums"]["payment_status"]
           total_amount: number
           updated_at: string
@@ -1292,6 +1296,7 @@ export type Database = {
           paid_at?: string | null
           paid_on_time?: boolean | null
           parent_id: string
+          reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           total_amount: number
           updated_at?: string
@@ -1307,6 +1312,7 @@ export type Database = {
           paid_at?: string | null
           paid_on_time?: boolean | null
           parent_id?: string
+          reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           total_amount?: number
           updated_at?: string
@@ -1812,7 +1818,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      auth_role: { Args: never; Returns: string }
+      entry_lesson: { Args: { p_entry: string }; Returns: string }
+      homework_lesson: { Args: { p_homework: string }; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
+      is_my_child: { Args: { p_student: string }; Returns: boolean }
+      lesson_class: { Args: { p_lesson: string }; Returns: string }
+      lesson_tutor: { Args: { p_lesson: string }; Returns: string }
+      makeup_request_lesson: { Args: { p_request: string }; Returns: string }
+      parent_owns_class: { Args: { p_class: string }; Returns: boolean }
+      payment_parent: { Args: { p_payment: string }; Returns: string }
+      student_owns_class: { Args: { p_class: string }; Returns: boolean }
+      tutor_owns_class: { Args: { p_class: string }; Returns: boolean }
+      tutor_owns_group: { Args: { p_group: string }; Returns: boolean }
+      tutor_teaches_student: { Args: { p_student: string }; Returns: boolean }
     }
     Enums: {
       attendance_status: "present" | "absent"

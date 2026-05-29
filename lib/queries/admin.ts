@@ -1503,6 +1503,7 @@ export async function getAdminStudents(supabase: Supabase): Promise<AdminStudent
 export type AdminPaymentRow = {
   paymentId: string
   parentId: string
+  remindersDisabled: boolean
   parentName: string
   parentInitials: string
   parentColor: string
@@ -1554,6 +1555,7 @@ export async function getAdminPayments(
         id, billing_month, total_amount, status, delay_number, paid_at, due_date,
         parent:parents!payments_parent_id_fkey (
           profile_id,
+          reminders_disabled,
           profile:profiles!parents_profile_id_fkey ( first_name, last_name )
         ),
         lines:payment_lines!payment_lines_payment_id_fkey (
@@ -1578,6 +1580,7 @@ export async function getAdminPayments(
     due_date: string
     parent: {
       profile_id: string
+      reminders_disabled: boolean
       profile: { first_name: string; last_name: string }
     }
     lines: Array<{
@@ -1629,6 +1632,7 @@ export async function getAdminPayments(
     return {
       paymentId: p.id,
       parentId: p.parent.profile_id,
+      remindersDisabled: p.parent.reminders_disabled,
       parentName,
       parentInitials: getInitials(p.parent.profile.first_name, p.parent.profile.last_name),
       parentColor: getAvatarColor(parentName),
