@@ -1,10 +1,21 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
-// Logowanie — TYLKO UI (sekcja 6.6). Bez podpięcia do Supabase Auth:
-// logowanie zwraca przykładowy błąd, "Nie pamiętam hasła" symuluje wysyłkę.
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+// Logowanie — Supabase Auth (signInWithPassword). Po zalogowaniu redirect na
+// panel wg roli z profilu. "Nie pamiętam hasła" wciąż symuluje wysyłkę (reset
+// hasła = osobny etap).
+
+const ROLE_DEST: Record<string, string> = {
+  admin: "/panel/admin/dashboard",
+  tutor: "/panel/tutor/dashboard",
+  parent: "/panel/parent/dashboard",
+  student: "/panel/student/dashboard",
+};
 
 function Input({
   label,
@@ -91,6 +102,7 @@ const primaryBtn =
   "w-full rounded-[14px] bg-primary py-3.5 text-[16px] font-extrabold text-white shadow-[0_4px_16px_rgba(59,143,240,0.31)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_6px_24px_rgba(59,143,240,0.5)] disabled:cursor-wait disabled:opacity-80";
 
 export function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -98,18 +110,38 @@ export function LoginScreen() {
   const [error, setError] = useState("");
   const [step, setStep] = useState<"login" | "forgot" | "sent">("login");
 
-  function handleLogin() {
+  async function handleLogin() {
     setError("");
     if (!email || !password) {
       setError("Uzupełnij email i hasło");
       return;
     }
     setLoading(true);
-    // UI-only: brak prawdziwego auth — pokazujemy przykładowy błąd.
-    setTimeout(() => {
+    const supabase = createSupabaseBrowserClient();
+    const { data, error: signErr } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (signErr || !data.user) {
       setLoading(false);
       setError("Nieprawidłowy email lub hasło");
-    }, 1200);
+      return;
+    }
+    // Rola z profilu → odpowiedni panel.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+    const dest = profile?.role ? ROLE_DEST[profile.role] : undefined;
+    if (!dest) {
+      setLoading(false);
+      setError("Konto nie ma przypisanej roli. Skontaktuj się z centrum.");
+      return;
+    }
+    // Zostaw loading=true podczas przekierowania (przycisk pokazuje "Logowanie...").
+    router.push(dest);
+    router.refresh();
   }
 
   function handleForgot() {

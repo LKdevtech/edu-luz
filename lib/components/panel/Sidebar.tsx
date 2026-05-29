@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useTransition } from 'react'
 
 import type { PanelNavItem, PanelRoleBadge } from './PanelLayout'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
 
 type SidebarProps = {
@@ -13,6 +15,17 @@ type SidebarProps = {
 
 export function Sidebar({ navItems, roleBadge }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  function handleLogout() {
+    startTransition(async () => {
+      const supabase = createSupabaseBrowserClient()
+      await supabase.auth.signOut()
+      router.push('/login')
+      router.refresh()
+    })
+  }
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-subtle bg-alt md:flex">
@@ -69,6 +82,19 @@ export function Sidebar({ navItems, roleBadge }: SidebarProps) {
           )
         })}
       </nav>
+      <div className="mt-auto border-t border-subtle p-3">
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isPending}
+          className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-secondary transition-colors hover:bg-[rgba(239,68,68,0.08)] hover:text-[#EF4444] disabled:opacity-60"
+        >
+          <span className="text-base" aria-hidden>
+            🚪
+          </span>
+          <span className="flex-1 text-left">{isPending ? 'Wylogowywanie…' : 'Wyloguj'}</span>
+        </button>
+      </div>
     </aside>
   )
 }

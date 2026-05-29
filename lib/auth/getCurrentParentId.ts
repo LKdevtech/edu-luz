@@ -3,11 +3,10 @@ import 'server-only'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
- * Zwraca ID aktualnie zalogowanego rodzica.
+ * Zwraca ID aktualnie zalogowanego rodzica (z sesji Supabase Auth).
  *
- * Dev-mode fallback: `DEV_PARENT_ID` z `.env.local` (Monika Nowak).
- *
- * TODO(auth): wpiąć middleware Supabase + sprawdzić rolę profilu.
+ * Fallback `DEV_PARENT_ID` działa TYLKO w developmencie i TYLKO gdy nikt nie jest
+ * zalogowany. W produkcji wymagana realna sesja.
  */
 export async function getCurrentParentId(): Promise<string> {
   const supabase = createSupabaseServerClient()
@@ -24,14 +23,12 @@ export async function getCurrentParentId(): Promise<string> {
     if (profile?.role === 'parent') {
       return user.id
     }
+    throw new Error('Zalogowany użytkownik nie ma roli rodzica.')
   }
 
-  const devId = process.env.DEV_PARENT_ID
-  if (!devId) {
-    throw new Error(
-      'Brak zalogowanego rodzica i nie ustawiono DEV_PARENT_ID w .env.local. ' +
-        'Patrz .env.local.example.',
-    )
+  // Brak sesji — dev fallback tylko w developmencie.
+  if (process.env.NODE_ENV === 'development' && process.env.DEV_PARENT_ID) {
+    return process.env.DEV_PARENT_ID
   }
-  return devId
+  throw new Error('Brak zalogowanego rodzica — zaloguj się przez /login.')
 }

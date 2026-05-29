@@ -3,11 +3,10 @@ import 'server-only'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
- * Zwraca ID aktualnie zalogowanego admina.
+ * Zwraca ID aktualnie zalogowanego admina (z sesji Supabase Auth).
  *
- * Dev-mode fallback: `DEV_ADMIN_ID` z `.env.local`.
- *
- * TODO(auth): wpiąć middleware Supabase + sprawdzić rolę profilu.
+ * Fallback `DEV_ADMIN_ID` działa TYLKO w developmencie i TYLKO gdy nikt nie jest
+ * zalogowany — ułatwia pracę bez logowania. W produkcji wymagana realna sesja.
  */
 export async function getCurrentAdminId(): Promise<string> {
   const supabase = createSupabaseServerClient()
@@ -24,14 +23,12 @@ export async function getCurrentAdminId(): Promise<string> {
     if (profile?.role === 'admin') {
       return user.id
     }
+    throw new Error('Zalogowany użytkownik nie ma roli admin.')
   }
 
-  const devId = process.env.DEV_ADMIN_ID
-  if (!devId) {
-    throw new Error(
-      'Brak zalogowanego admina i nie ustawiono DEV_ADMIN_ID w .env.local. ' +
-        'Patrz .env.local.example.',
-    )
+  // Brak sesji — dev fallback tylko w developmencie.
+  if (process.env.NODE_ENV === 'development' && process.env.DEV_ADMIN_ID) {
+    return process.env.DEV_ADMIN_ID
   }
-  return devId
+  throw new Error('Brak zalogowanego admina — zaloguj się przez /login.')
 }
