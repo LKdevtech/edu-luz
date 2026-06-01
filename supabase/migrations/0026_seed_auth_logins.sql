@@ -19,7 +19,7 @@
 -- ── auth.users: email + hasło + tokeny + metadata roli ──
 update auth.users set
   email = 'admin@edu-luz.com',
-  encrypted_password = crypt('admin123', gen_salt('bf')),
+  encrypted_password = extensions.crypt('admin123', extensions.gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
   raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'admin'),
@@ -29,7 +29,7 @@ where id = '99999999-0000-0000-0000-000000000001';
 
 update auth.users set
   email = 'tutor@edu-luz.com',
-  encrypted_password = crypt('tutor123', gen_salt('bf')),
+  encrypted_password = extensions.crypt('tutor123', extensions.gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
   raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'tutor'),
@@ -39,7 +39,7 @@ where id = '99999999-0000-0000-0000-000000000010';
 
 update auth.users set
   email = 'rodzic@edu-luz.com',
-  encrypted_password = crypt('rodzic123', gen_salt('bf')),
+  encrypted_password = extensions.crypt('rodzic123', extensions.gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
   raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'parent'),
@@ -49,7 +49,7 @@ where id = '99999999-0000-0000-0000-000000000020';
 
 update auth.users set
   email = 'uczen@edu-luz.com',
-  encrypted_password = crypt('uczen123', gen_salt('bf')),
+  encrypted_password = extensions.crypt('uczen123', extensions.gen_salt('bf')),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   confirmation_token = '', recovery_token = '', email_change = '', email_change_token_new = '',
   raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'student'),

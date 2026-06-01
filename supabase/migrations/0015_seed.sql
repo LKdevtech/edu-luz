@@ -35,22 +35,22 @@ insert into auth.users (
 )
 values
   ('99999999-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'admin@edu-luz.com', crypt('admin1234', gen_salt('bf')), now(), now(), now(),
+   'admin@edu-luz.com', extensions.crypt('admin1234', extensions.gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'tomasz.kowalski@edu-luz.com', crypt('tutor1234', gen_salt('bf')), now(), now(), now(),
+   'tomasz.kowalski@edu-luz.com', extensions.crypt('tutor1234', extensions.gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'maria.zielinska@edu-luz.com', crypt('tutor1234', gen_salt('bf')), now(), now(), now(),
+   'maria.zielinska@edu-luz.com', extensions.crypt('tutor1234', extensions.gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'monika.nowak@gmail.com', crypt('parent1234', gen_salt('bf')), now(), now(), now(),
+   'monika.nowak@gmail.com', extensions.crypt('parent1234', extensions.gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'kacper.nowak@edu-luz.com', crypt('student1234', gen_salt('bf')), now(), now(), now(),
+   'kacper.nowak@edu-luz.com', extensions.crypt('student1234', extensions.gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb),
   ('99999999-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'ola.nowak@edu-luz.com', crypt('student1234', gen_salt('bf')), now(), now(), now(),
+   'ola.nowak@edu-luz.com', extensions.crypt('student1234', extensions.gen_salt('bf')), now(), now(), now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb)
 on conflict (id) do nothing;
 
